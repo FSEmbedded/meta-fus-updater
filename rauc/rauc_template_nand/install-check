@@ -1,0 +1,30 @@
+#!/bin/sh
+
+case "$1" in
+        slot-post-install)
+                env > /tmp/log
+                if   ( "$RAUC_SLOT_NAME" == "rootfs.1" ) || ( "$RAUC_SLOT_NAME" == "rootfs.0" ); then
+                        export RAUC_IMAGE_NAME="rootfs.squashfs"
+                elif ( "$RAUC_SLOT_NAME" == "boot.1"   ) || ( "$RAUC_SLOT_NAME" == "boot.0"   ); then
+                        export RAUC_IMAGE_NAME="Image.img"
+                elif ( "$RAUC_SLOT_NAME" == "fdt.0"    ) || ( "$RAUC_SLOT_NAME" == "fdt.1"    ); then
+                        export RAUC_IMAGE_NAME="${fdt_img}"
+                fi
+                export RAUC_IMAGE_NAME="${RAUC_BUNDLE_MOUNT_POINT}/${RAUC_IMAGE_NAME}"
+                export SIZE=$(wc -c < $RAUC_IMAGE_NAME)
+                export RAUC_IMAGE_DIGEST=$(sha256sum $RAUC_IMAGE_NAME | awk '{ print $1 }')
+                sync && echo 3 > /proc/sys/vm/drop_caches
+        if ( "$(dd bs=$SIZE count=1 if=$RAUC_SLOT_DEVICE | sha256sum | awk '{ print $1 }')" != "$RAUC_IMAGE_DIGEST" ); then
+                echo $RAUC_SLOT_DEVICE >> /tmp/log
+                                echo $SIZE >> /tmp/log
+                                echo $RAUC_IMAGE_NAME >> /tmp/log
+                echo "$(dd bs=$SIZE count=1 if=$RAUC_SLOT_DEVICE | sha256sum)" >> /tmp/log
+                echo "$RAUC_IMAGE_DIGEST  -" >> /tmp/log
+                exit 100
+        fi
+                ;;
+        *)
+                exit 99
+                ;;
+esac
+exit 0
