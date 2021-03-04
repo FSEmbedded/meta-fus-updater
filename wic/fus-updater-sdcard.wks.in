@@ -1,0 +1,32 @@
+# short-description: Create SD card image with a boot partition
+# long-description:
+# Create an image that can be written onto a SD card using dd for use
+# with i.MX SoC family
+# It uses u-boot + other binaries gathered together on imx-boot file
+#
+# The disk layout used is:
+#  - ---------- -------------- ------------------------------------------------------------------------------
+# | | imx-boot |     bootA    |    bootB    |     swap      |    rootfsB    |	rootfsB      |  data
+#  - ---------- -------------- ------------------------------------------------------------------------------
+# ^ ^          ^              ^             ^    do not     ^               ^                ^
+# | |          |              |             |    remove     |               |                |
+# 0 |        8MiB   72MiB    95MiB        135MiB           336MiB          536MiB            736MiB
+#   ${IMX_BOOT_SEEK} 32 or 33kiB, see reference manual
+#
+part u-boot --source rawcopy --sourceparams="file=imx-boot" --ondisk mmcblk --no-table --align ${IMX_BOOT_SEEK}
+part --ondisk mmcblk --fstype=vfat --label UBootA --active --align 8192 --fixed-size 8M
+part --ondisk mmcblk --fstype=vfat --label UBootB --active --align 8192 --fixed-size 8M
+# Do not remove swap partition. It is place holder for root partitions.
+# Both rootfs partition must be on extended part because it have to be of same type (logical part)
+part swap --ondisk mmcblk --size 1 --label swap1 --fstype=swap
+part --source bootimg-partition --ondisk mmcblk --fstype=vfat --label bootA --active --align 8192 --fixed-size 64M
+part --source bootimg-partition --ondisk mmcblk --fstype=vfat --label bootB --active --align 8192 --fixed-size 64M
+part --source rootfs --ondisk mmcblk --fstype=squashfs --align 8192 --exclude-path=rw_fs/root/application --fixed-size 200M
+part --source rootfs --ondisk mmcblk --fstype=squashfs --align 8192 --exclude-path=rw_fs/root/application --fixed-size 200M
+
+
+
+# rest is data
+part --source rootfs --ondisk mmcblk --rootfs-dir=${IMAGE_ROOTFS}/rw_fs/root --fstype=ext4 --label data --align 8192 --fixed-size 30M
+
+bootloader --ptable msdos
