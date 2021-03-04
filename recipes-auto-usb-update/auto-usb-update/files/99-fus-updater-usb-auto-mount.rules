@@ -1,0 +1,19 @@
+# Import FS infos
+SUBSYSTEMS=="usb", IMPORT{program}="/sbin/blkid -o udev -p %N"
+# Only mount FS-UPDATER labeled usb stick
+SUBSYSTEMS=="usb|mmc", ENV{ID_FS_LABEL}!="FUS-UPDATER", GOTO="auto_mount_fus_updater"
+SUBSYSTEMS=="usb|mmc", ENV{ID_FS_LABEL}=="FUS-UPDATER", ENV{dir_name}="memory-stick-%k"
+SUBSYSTEMS=="usb|mmc", ENV{ID_FS_LABEL}=="FUS-UPDATER", ENV{UPDATE_STICK}="/tmp/fus-updater-%E{dir_name}"
+# Global mount options
+SUBSYSTEMS=="usb|mmc", ACTION=="add", ENV{mount_options}="relatime"
+# Mount filesystem read-only and only fat
+SUBSYSTEMS=="usb|mmc", ACTION=="add", ENV{ID_FS_TYPE}=="vfat", ENV{mount_options}="ro,$env{mount_options}"
+# Mount the device
+SUBSYSTEMS=="usb|mmc", ACTION=="add", RUN+="/bin/mkdir -p /tmp/fus-updater-%E{dir_name}", RUN+="/bin/mount -o $env{mount_options} /dev/%k /tmp/fus-updater-%E{dir_name}"
+# Run the update
+SUBSYSTEMS=="usb|mmc", ACTION=="add", RUN+="/bin/busybox sh /usr/libexec/usb_fs_updater.sh /tmp/fus-updater-%E{dir_name}"
+# Clean up after removal
+SUBSYSTEMS=="usb|mmc", ACTION=="remove", RUN+="/bin/umount -l /tmp/fus-updater-%E{dir_name}", RUN+="/bin/rmdir /tmp/fus-updater-%E{dir_name}"
+# Exit
+LABEL="auto_mount_fus_updater"
+
