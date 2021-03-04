@@ -1,0 +1,14 @@
+[update]
+compatible=rauc-demo-mx8mm
+version=2020.10-08
+
+[hooks]
+filename=install-check
+
+[image.rootfs]
+filename=rootfs.squashfs
+hooks=post-install;
+
+[image.boot]
+filename=boot.vfat
+hooks=post-install;
