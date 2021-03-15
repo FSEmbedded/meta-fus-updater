@@ -1,0 +1,17 @@
+#!/bin/sh
+#
+# This script downloads the rauc layer
+
+#variables
+LAYER_DIR="sources"
+LAYER_NAME="meta-rauc"
+
+# Cause script to stop on errors, e.g. if download fails
+set -e
+
+# Download the rauc layer
+DOWNLOAD_URL=https://github.com/rauc/meta-rauc.git
+TAG=dunfell
+git clone $DOWNLOAD_URL -b $TAG $LAYER_DIR/$LAYER_NAME
+
+echo "Download rauc layer successful!"
