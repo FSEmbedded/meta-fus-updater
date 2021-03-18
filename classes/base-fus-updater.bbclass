@@ -1,4 +1,4 @@
-do_create_nand_packages() {
+do_create_squashfs_rootfs_images() {
 	# Copy RootFS temporarly for removing of /rw_fs/root/*
 
 	local IMAGE_ROOTFS_FUS_UPDATER_BASE=${IMAGE_ROOTFS}/..
@@ -12,19 +12,19 @@ do_create_nand_packages() {
 	local IMAGE_DATA_PARTITION_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/data_partition
 	local IMAGE_ROOTFS_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
 
-	cp -r ${IMAGE_ROOTFS} ${IMAGE_ROOTFS_FUS_UPDATER}
+	cp -r ${IMAGE_ROOTFS}/* ${IMAGE_ROOTFS_FUS_UPDATER}
 	rm -rf ${IMAGE_ROOTFS_FUS_UPDATER}/rw_fs/root/*
 	cp -r ${IMAGE_ROOTFS}/rw_fs/root/ ${IMAGE_DATA_PARTITION_FUS_UPDATER}
 
 	# Create data partition
-	mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
+	${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
 
 	#Create system partition
-	mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.nand.squashfs -noappend
+	${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.${UBOOT_CONFIG}.squashfs -noappend
 
 	#Create Symlinks
 	cd ${IMGDEPLOYDIR}
-	ln -sf ${IMAGE_NAME}.nand.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.nand.squashfs
+	ln -sf ${IMAGE_NAME}.${UBOOT_CONFIG}.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.${UBOOT_CONFIG}.squashfs
 	ln -sf ${IMAGE_NAME}.data-partition-nand.ubifs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.data-partition-nand.ubifs
 }
 
@@ -39,15 +39,14 @@ python do_create_update_package() {
 
     d.setVar("RAUC_IMG_ROOTFS", d.getVar("IMGDEPLOYDIR"))
     d.appendVar("RAUC_IMG_ROOTFS", "/")
-    d.appendVar("RAUC_IMG_ROOTFS", d.getVar("IMAGE_NAME") + ".nand.squashfs")
+    d.appendVar("RAUC_IMG_ROOTFS", d.getVar("IMAGE_NAME") + "." + d.getVar("UBOOT_CONFIG") + ".squashfs")
 
     d.setVar("RAUC_IMG_KERNEL", d.getVar("DEPLOY_DIR_IMAGE"))
     d.appendVar("RAUC_IMG_KERNEL", "/Image")
 
     d.setVar("RAUC_IMG_DEVICE_TREE", d.getVar("DEPLOY_DIR_IMAGE"))
-    d.appendVar("RAUC_IMG_DEVICE_TREE", "/imx-boot-tools")
-    d.appendVar("RAUC_IMG_DEVICE_TREE", "/")
-    d.appendVar("RAUC_IMG_DEVICE_TREE", d.getVar("UBOOT_DTB_NAME"))
+
+    d.appendVar("RAUC_IMG_DEVICE_TREE", "/" + d.getVar("KERNEL_DEVICETREE").split(" ")[0].split("/")[-1] )
 
     d.setVar("RAUC_BINARY", d.getVar("DEPLOY_DIR_TOOLS"))
     d.appendVar("RAUC_BINARY", "/rauc")
@@ -78,9 +77,8 @@ def create_rauc_update_mmc(d):
     identify_partition_by_position = dict()
     ###################################
     # Here youc can adapt the partition layout
-    identify_partition_by_position[1] = "uboot.img"
-    identify_partition_by_position[5] = "boot.vfat"
-    identify_partition_by_position[7] = "rootfs.squashfs"
+    identify_partition_by_position["1"] = "uboot.img"
+    identify_partition_by_position["5"] = "boot.vfat"
 
     ##################################
 
@@ -131,9 +129,10 @@ def create_rauc_update_mmc(d):
 
     dest_dir_mmc = os.path.join(d.getVar("DEPLOY_DIR_IMAGE"), "rauc_update_mmc")
 
+    if os.path.exists(dest_dir_mmc):
+        shutil.rmtree(dest_dir_mmc)
 
     pathlib.Path(dest_dir_mmc).mkdir(parents=True, exist_ok=True)
-
 
     path_to_rauc     = d.getVar("RAUC_BINARY")
     path_to_cert     = d.getVar("RAUC_CERT")
@@ -149,22 +148,24 @@ def create_rauc_update_mmc(d):
         bb.fatal(f"The copy from {input_dir_mmc} to {dest_dir_mmc} are not successfull: \n {error_msg}")
 
     for partiton in disk.partitions:
-        if partiton.number in identify_partition_by_position.keys():
+
+        if str(partiton.number) in identify_partition_by_position.keys():
             count_blocks = partiton.getLength(unit='sectors')
             skip = partiton.geometry.start
             dd(input_file=d.getVar("RAUC_IMG_WIC"),
-                output_file=os.path.join(dest_dir_mmc, identify_partition_by_position[partiton.number]),
+                output_file=os.path.join(dest_dir_mmc, identify_partition_by_position[str(partiton.number)]),
                 count=count_blocks,
                 skip=skip,
                 bs=block_size)
 
+    shutil.copyfile(d.getVar("RAUC_IMG_ROOTFS"), os.path.join(dest_dir_mmc, "rootfs.squashfs"))
+
     input_dir_mmc = dest_dir_mmc
     output_file_mmc = os.path.join(d.getVar("DEPLOY_DIR_IMAGE"), "rauc_update_emmc.artifact")
 
-    try:
+    if os.path.exists(output_file_mmc):
         os.remove(output_file_mmc)
-    except:
-        pass
+
 
     handle = sp.Popen(f"{path_to_rauc} bundle --key {path_to_key} --cert {path_to_cert} {input_dir_mmc} {output_file_mmc}", shell=True, stderr=sp.PIPE)
     handle.wait()
@@ -207,6 +208,8 @@ def create_rauc_update_nand(d):
 
     dest_dir_nand = os.path.join(d.getVar("DEPLOY_DIR_IMAGE"), "rauc_update_nand")
 
+    if os.path.exists(dest_dir_nand):
+        shutil.rmtree(dest_dir_nand)
 
     pathlib.Path(dest_dir_nand).mkdir(parents=True, exist_ok=True)
 
@@ -253,8 +256,5 @@ def create_rauc_update_nand(d):
 
     shutil.rmtree(input_dir_nand)
 
-addtask do_create_nand_packages after do_rootfs before do_image
-addtask do_create_update_package after do_image_wic before do_image_complete
-
-do_create_nand_packages[depends] += "mtd-utils-native:do_populate_sysroot"
-do_create_nand_packages[depends] += "squashfs-tools-native:do_populate_sysroot"
+do_create_squashfs_rootfs_images[depends] += "mtd-utils-native:do_populate_sysroot"
+do_create_squashfs_rootfs_images[depends] += "squashfs-tools-native:do_populate_sysroot"
