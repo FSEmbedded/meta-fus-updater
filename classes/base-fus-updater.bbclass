@@ -14,7 +14,7 @@ do_create_squashfs_rootfs_images() {
 
 	cp -r ${IMAGE_ROOTFS}/* ${IMAGE_ROOTFS_FUS_UPDATER}
 	rm -rf ${IMAGE_ROOTFS_FUS_UPDATER}/rw_fs/root/*
-	cp -r ${IMAGE_ROOTFS}/rw_fs/root/ ${IMAGE_DATA_PARTITION_FUS_UPDATER}
+	cp -r ${IMAGE_ROOTFS}/rw_fs/root/* ${IMAGE_DATA_PARTITION_FUS_UPDATER}
 
 	# Create data partition
 	${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
