@@ -1,6 +1,7 @@
 python(){
     if "fsimx8mm" == d.getVar("MACHINE"):
         d.setVar("WKS_FILE", "fus-updater-sdcard.wks.in")
+        d.appendVar("IMAGE_FSTYPES", " wic")
     else:
         machine = d.getVar("MACHINE")
         bb.fatal(f"The {machine} is not supported/tested for meta-fus-updater layer")
