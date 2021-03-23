@@ -17,7 +17,7 @@ class DynamicApplicationMounting(object):
 
     def set_lower_directory(self, parent_overlay):
         """
-        Set teh lower directory, stacking is possbible
+        Set the lower directory, stacking is possbible
         @param: parent_overlay: Can be a DynamicApplicationMounting object or a absolut description of former overlays
         """
         if isinstance(parent_overlay, DynamicApplicationMounting):
