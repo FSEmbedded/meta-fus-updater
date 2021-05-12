@@ -1,0 +1,13 @@
+diff --git a/src/parser.cpp b/src/parser.cpp
+index 66c7025..3b38450 100644
+--- a/src/parser.cpp
++++ b/src/parser.cpp
+@@ -163,7 +163,7 @@ namespace inicpp
+ 
+ 	void parser::validate_identifier(const std::string &str, size_t line_number)
+ 	{
+-		std::regex reg_expr("^[a-zA-Z.$:][-a-zA-Z0-9_~.:$ ]*$");
++		std::regex reg_expr("^[a-zA-Z.$:][-a-zA-Z0-9_~.:/$ ]*$");
+ 		if (!std::regex_match(str, reg_expr)) {
+ 			throw parser_exception("Identifier contains forbidden characters on line " + std::to_string(line_number));
+ 		}
