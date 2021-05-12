@@ -12,6 +12,8 @@ set -e
 # Download the rauc layer
 DOWNLOAD_URL=https://github.com/rauc/meta-rauc.git
 TAG=dunfell
-git clone $DOWNLOAD_URL -b $TAG $LAYER_DIR/$LAYER_NAME
+if [[ ! -e $LAYER_DIR/$LAYER_NAME ]]; then
+	git clone $DOWNLOAD_URL -b $TAG $LAYER_DIR/$LAYER_NAME
+fi
 
 echo "Download rauc layer successful!"
