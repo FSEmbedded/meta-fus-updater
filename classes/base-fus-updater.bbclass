@@ -1,6 +1,5 @@
 do_create_squashfs_rootfs_images() {
 	# Copy RootFS temporarly for removing of /rw_fs/root/*
-
 	local IMAGE_ROOTFS_FUS_UPDATER_BASE=${IMAGE_ROOTFS}/..
 
 	rm -rf ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
@@ -12,15 +11,15 @@ do_create_squashfs_rootfs_images() {
 	local IMAGE_DATA_PARTITION_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/data_partition
 	local IMAGE_ROOTFS_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
 
-	cp -r ${IMAGE_ROOTFS}/* ${IMAGE_ROOTFS_FUS_UPDATER}
+	cp -a ${IMAGE_ROOTFS}/* ${IMAGE_ROOTFS_FUS_UPDATER}
 	rm -rf ${IMAGE_ROOTFS_FUS_UPDATER}/rw_fs/root/*
-	cp -r ${IMAGE_ROOTFS}/rw_fs/root/* ${IMAGE_DATA_PARTITION_FUS_UPDATER}
+	cp -a ${IMAGE_ROOTFS}/rw_fs/root/* ${IMAGE_DATA_PARTITION_FUS_UPDATER}
 
 	# Create data partition
 	${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
 
 	#Create system partition
-	${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.${UBOOT_CONFIG}.squashfs -noappend
+	${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.${UBOOT_CONFIG}.squashfs ${EXTRA_IMAGECMD} -all-root -noappend -comp xz
 
 	#Create Symlinks
 	cd ${IMGDEPLOYDIR}
