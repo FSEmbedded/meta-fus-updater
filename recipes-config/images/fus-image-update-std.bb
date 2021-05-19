@@ -7,8 +7,9 @@ python(){
         bb.fatal(f"The {machine} is not supported/tested for meta-fus-updater layer")
 }
 
-addtask do_create_squashfs_rootfs_images after do_rootfs before do_image
 addtask do_create_update_package after do_image_wic before do_image_complete
+
+IMAGE_FSTYPES_append = " update_package"
 
 require recipes-config/images/fus-image-std.bb
 
@@ -18,9 +19,7 @@ FIRMWARE_VERSION ?= "20210304"
 
 CORE_IMAGE_EXTRA_INSTALL += " \
 	u-boot-fw-utils \
-	python3-fs-updater-lib \
-	python3-fs-updater-cli \
-	dynamic-mounting \
+	dynamic-overlay \
 	auto-usb-update \
 	2-stage-boot \
 	application \

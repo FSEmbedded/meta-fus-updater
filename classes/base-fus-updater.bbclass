@@ -19,7 +19,7 @@ do_create_squashfs_rootfs_images() {
 	${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
 
 	#Create system partition
-	${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.${UBOOT_CONFIG}.squashfs ${EXTRA_IMAGECMD} -all-root -noappend -comp xz
+	${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.${UBOOT_CONFIG}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
 
 	#Create Symlinks
 	cd ${IMGDEPLOYDIR}
@@ -257,3 +257,10 @@ def create_rauc_update_nand(d):
 
 do_create_squashfs_rootfs_images[depends] += "mtd-utils-native:do_populate_sysroot"
 do_create_squashfs_rootfs_images[depends] += "squashfs-tools-native:do_populate_sysroot"
+
+do_image_wic[depends] += "squashfs-tools-native:do_populate_sysroot"
+do_image_wic[depends] += "mtd-utils-native:do_populate_sysroot"
+
+IMAGE_CMD_update_package () {
+	do_create_squashfs_rootfs_images
+}
