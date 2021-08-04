@@ -20,8 +20,3 @@ DEPENDS = "\
 	zlib \
 "
 
-do_install(){
-	install -d ${D}/sbin/
-	install -m 0555 ${B}/dynamic_overlay ${D}/sbin/preinit
-}
-

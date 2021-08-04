@@ -19,21 +19,21 @@ type=ubivol
 parent=boot.1
 
 [slot.boot.0]
-device=/dev/mtd4
+device=/dev/mtd6
 type=nand
 bootname=A
 
 [slot.fdt.0]
-device=/dev/mtd6
+device=/dev/mtd7
 type=nand
 parent=boot.0
 
 [slot.boot.1]
-device=/dev/mtd5
+device=/dev/mtd8
 type=nand
 bootname=B
 
 [slot.fdt.1]
-device=/dev/mtd7
+device=/dev/mtd9
 type=nand
 parent=boot.1

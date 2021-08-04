@@ -10,12 +10,11 @@ python(){
 addtask do_create_update_package after do_image_wic before do_image_complete
 
 IMAGE_FSTYPES_append = " update_package"
+DESCRIPTION = "F&S standard update image based on X11 and matchbox"
+LICENSE = "MIT"
 
 require recipes-config/images/fus-image-std.bb
 
-DESCRIPTION = "F&S standard update image based on X11 and matchbox"
-LICENSE = "MIT"
-FIRMWARE_VERSION ?= "20210304"
 
 CORE_IMAGE_EXTRA_INSTALL += " \
 	u-boot-fw-utils \

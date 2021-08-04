@@ -13,7 +13,8 @@
 # 0 |        8MiB   72MiB    95MiB        135MiB           336MiB          536MiB            736MiB
 #   ${IMX_BOOT_SEEK} 32 or 33kiB, see reference manual
 #
-part u-boot --source rawcopy --sourceparams="file=imx-boot" --ondisk mmcblk --no-table --align ${IMX_BOOT_SEEK}
+
+part u-boot --source rawcopy --sourceparams="file=${UBOOT_WIC_BINARY}" --ondisk mmcblk --no-table --align ${IMX_BOOT_SEEK}
 part --ondisk mmcblk --fstype=vfat --label UBootA --active --align 8192 --fixed-size 8M
 part --ondisk mmcblk --fstype=vfat --label UBootB --active --align 8192 --fixed-size 8M
 # Do not remove swap partition. It is place holder for root partitions.
@@ -23,7 +24,6 @@ part --source bootimg-partition --ondisk mmcblk --fstype=vfat --label bootA --ac
 part --source bootimg-partition --ondisk mmcblk --fstype=vfat --label bootB --active --align 8192 --fixed-size 64M
 part --source rootfs --ondisk mmcblk --fstype=squashfs --align 8192 --exclude-path=rw_fs/root/application --fixed-size 200M
 part --source rootfs --ondisk mmcblk --fstype=squashfs --align 8192 --exclude-path=rw_fs/root/application --fixed-size 200M
-
 
 
 # rest is data

@@ -1,18 +1,18 @@
-inherit cmake
+inherit cmake lib_package
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 DESCRIPTION = "inicpp (C++ parser of INI files with schema validation)"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=7b17e5f89008916a36fff249ec27716d"
-BBCLASSEXTEND = "nativesdk"
+
 ALLOW_EMPTY_${PN} = "1"
 SRCREV = "1a3ac414f9ccd7ed5d5c0810206d336afd0f36ba"
 SRC_URI = "git://github.com/SemaiCZE/inicpp.git \
 		   file://0001-extend-allowed-characters.patch \
+           file://0001-patch-to-create-static-and-shared-library.patch \
 "
 
-EXTRA_OECMAKE += "	-DINICPP_BUILD_SHARED=off \
-					-DINICPP_BUILD_TESTS=off \
+EXTRA_OECMAKE += "	-DINICPP_BUILD_TESTS=off \
 					-DINICPP_BUILD_EXAMPLES=off \
 				 "
 S = "${WORKDIR}/git"
@@ -22,6 +22,8 @@ S = "${WORKDIR}/git"
 FILES_${PN} = " \
 	${libdir} \
 	${libdir}/libinicpp.a \
+    ${libdir}/libinicpp.so \
+    ${libdir}/libinicpp.so.0 \
 	${includedir}/inicpp \
 	${includedir}/inicpp/string_utils.h \
 	${includedir}/inicpp/dll.h \
@@ -36,6 +38,13 @@ FILES_${PN} = " \
 	${includedir}/inicpp/exception.h \
 	${includedir}/inicpp/section_schema.h \
 "
+
+FILES_${PN}-bin = " \
+	${libdir} \
+    ${libdir}/libinicpp.so \
+    ${libdir}/libinicpp.so.0 \
+"
+
 #INSANE_SKIP_${PN} = "installed-vs-shipped staticdev"
 
 do_install() {
@@ -56,5 +65,7 @@ do_install() {
 	install -m 0755 ${S}/include/inicpp/exception.h ${D}/${includedir}/inicpp
 	install -m 0755 ${S}/include/inicpp/section_schema.h ${D}/${includedir}/inicpp
 
-	install -m 0755 ${B}/libinicpp.a ${D}/${libdir}
+	install -m 0755 ${B}/libinicpp_static.a ${D}/${libdir}/libinicpp.a
+	install -m 0755 ${B}/libinicpp_shared.so ${D}/${libdir}/libinicpp.so.0
+    ln -s -r ${D}/${libdir}/libinicpp.so.0 ${D}/${libdir}/libinicpp.so
 }

@@ -19,11 +19,11 @@ do_create_squashfs_rootfs_images() {
 	${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
 
 	#Create system partition
-	${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.${UBOOT_CONFIG}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
+	${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.${MEMORY_TYPE}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
 
 	#Create Symlinks
 	cd ${IMGDEPLOYDIR}
-	ln -sf ${IMAGE_NAME}.${UBOOT_CONFIG}.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.${UBOOT_CONFIG}.squashfs
+	ln -sf ${IMAGE_NAME}.${MEMORY_TYPE}.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.${MEMORY_TYPE}.squashfs
 	ln -sf ${IMAGE_NAME}.data-partition-nand.ubifs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.data-partition-nand.ubifs
 }
 
@@ -38,7 +38,7 @@ python do_create_update_package() {
 
     d.setVar("RAUC_IMG_ROOTFS", d.getVar("IMGDEPLOYDIR"))
     d.appendVar("RAUC_IMG_ROOTFS", "/")
-    d.appendVar("RAUC_IMG_ROOTFS", d.getVar("IMAGE_NAME") + "." + d.getVar("UBOOT_CONFIG") + ".squashfs")
+    d.appendVar("RAUC_IMG_ROOTFS", d.getVar("IMAGE_NAME") + "." + d.getVar("MEMORY_TYPE") + ".squashfs")
 
     d.setVar("RAUC_IMG_KERNEL", d.getVar("DEPLOY_DIR_IMAGE"))
     d.appendVar("RAUC_IMG_KERNEL", "/Image")
@@ -227,16 +227,16 @@ def create_rauc_update_nand(d):
     input_dir_nand = dest_dir_nand
 
     shutil.copyfile(d.getVar("RAUC_IMG_ROOTFS"), input_dir_nand + "/rootfs.squashfs")
-    shutil.copyfile(d.getVar("RAUC_IMG_DEVICE_TREE"), input_dir_nand + "/" + d.getVar("UBOOT_DTB_NAME") + ".img")
+    shutil.copyfile(d.getVar("RAUC_IMG_DEVICE_TREE"), input_dir_nand + "/" + d.getVar("KERNEL_DEVICETREE").split(" ")[0].split("/")[1] + ".img")
     shutil.copyfile(d.getVar("RAUC_IMG_KERNEL"), input_dir_nand + "/Image.img")
 
     with open(input_dir_nand + "/install-check", "r+") as file:
-        filedata = file.read().replace("${fdt_img}", d.getVar("UBOOT_DTB_NAME") + ".img")
+        filedata = file.read().replace("${fdt_img}", d.getVar("KERNEL_DEVICETREE").split(" ")[0].split("/")[1] + ".img")
         file.seek(0)
         file.write(filedata)
 
     with open(input_dir_nand + "/manifest.raucm", "r+") as file:
-        filedata = file.read().replace("${fdt_img}", d.getVar("UBOOT_DTB_NAME") + ".img")
+        filedata = file.read().replace("${fdt_img}", d.getVar("KERNEL_DEVICETREE").split(" ")[0].split("/")[1] + ".img")
         file.seek(0)
         file.write(filedata)
 
