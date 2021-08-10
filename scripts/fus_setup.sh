@@ -1,5 +1,5 @@
 # $1 workdir of the caller script
-# $2 workdir of the called scriüt
+# $2 workdir of the called script
 #
 FORMER_PWD=$PWD
 cd $1/..

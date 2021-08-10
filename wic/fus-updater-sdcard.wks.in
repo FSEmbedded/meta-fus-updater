@@ -25,7 +25,6 @@ part --source bootimg-partition --ondisk mmcblk --fstype=vfat --label bootB --ac
 part --source rootfs --ondisk mmcblk --fstype=squashfs --align 8192 --exclude-path=rw_fs/root/application --fixed-size 200M
 part --source rootfs --ondisk mmcblk --fstype=squashfs --align 8192 --exclude-path=rw_fs/root/application --fixed-size 200M
 
-
 # rest is data
 part --source rootfs --ondisk mmcblk --rootfs-dir=${IMAGE_ROOTFS}/rw_fs/root --fstype=ext4 --label data --align 8192 --fixed-size 30M
 

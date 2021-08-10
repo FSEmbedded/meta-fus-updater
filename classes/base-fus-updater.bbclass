@@ -18,13 +18,12 @@ do_create_squashfs_rootfs_images() {
 	# Create data partition
 	${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
 
-	#Create system partition
+	# Create system partition
 	${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.${MEMORY_TYPE}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
 
-	#Create Symlinks
-	cd ${IMGDEPLOYDIR}
-	ln -sf ${IMAGE_NAME}.${MEMORY_TYPE}.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.${MEMORY_TYPE}.squashfs
-	ln -sf ${IMAGE_NAME}.data-partition-nand.ubifs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.data-partition-nand.ubifs
+	# Create Symlinks
+	ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.${MEMORY_TYPE}.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.${MEMORY_TYPE}.squashfs
+	ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.data-partition-nand.ubifs
 }
 
 python do_create_update_package() {
