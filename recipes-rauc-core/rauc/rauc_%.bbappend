@@ -15,9 +15,13 @@ SRC_URI_append := " \
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
+# This is currently not used by FS-Update, but the additional adu-agent
+# for cloud updates uses this to determine if an update has already been installed.
+FIRMWARE_VERSION ?= "20211012"
+
 python () {
     if d.getVar("FIRMWARE_VERSION") == None:
-        bb.fatal("FIRMWARE_VERSION is not defined in local.conf!")
+        bb.fatal("FIRMWARE_VERSION is not defined!")
     else:
         try:
             int(d.getVar("FIRMWARE_VERSION"))
@@ -26,19 +30,11 @@ python () {
             bb.fatal(f"FIRMWARE_VERSION :\"{var} is not convertable into int")
 }
 
-do_install_prepend() {
-	if [[ ${MEMORY_TYPE} == "emmc" ]]; then
-		cp ${WORKDIR}/system.conf.mmc ${WORKDIR}/system.conf
-	elif [[ ${MEMORY_TYPE} == "nand" ]]; then
-		cp ${WORKDIR}/system.conf.nand ${WORKDIR}/system.conf
-	else
-		bbfatal "MEMORY_TYPE ist not configured properly: allowed content is (emmc|nand); set is: $MEMORY_TYPE"
-		exit 1
-	fi
-
-
+do_install_append() {
+	install -m 0644 ${WORKDIR}/system.conf.mmc ${D}${sysconfdir}/rauc/system.conf.mmc
+	install -m 0644 ${WORKDIR}/system.conf.nand ${D}${sysconfdir}/rauc/system.conf.nand
+	rm -f ${D}${sysconfdir}/rauc/system.conf
 }
-
 
 #unset SYSTEMD_SERVICE_${PN}-mark-good
 #unset INITSCRIPT_PACKAGES
@@ -66,4 +62,3 @@ FILES_${PN} += "\
   ${sysconfdir}/rauc/bundle \
   ${sysconfdir}/fw_version \
 "
-

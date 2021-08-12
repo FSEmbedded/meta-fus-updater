@@ -19,6 +19,8 @@ require recipes-config/images/fus-image-std.bb
 CORE_IMAGE_EXTRA_INSTALL += " \
 	u-boot-fw-utils \
 	dynamic-overlay \
+	python3-fs-updater-lib \
+	python3-fs-updater-cli \
 	auto-usb-update \
 	2-stage-boot \
 	application \

@@ -19,10 +19,10 @@ do_create_squashfs_rootfs_images() {
 	${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
 
 	# Create system partition
-	${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.${MEMORY_TYPE}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
+	${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
 
 	# Create Symlinks
-	ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.${MEMORY_TYPE}.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.${MEMORY_TYPE}.squashfs
+	ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.squashfs
 	ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.data-partition-nand.ubifs
 }
 
@@ -37,7 +37,7 @@ python do_create_update_package() {
 
     d.setVar("RAUC_IMG_ROOTFS", d.getVar("IMGDEPLOYDIR"))
     d.appendVar("RAUC_IMG_ROOTFS", "/")
-    d.appendVar("RAUC_IMG_ROOTFS", d.getVar("IMAGE_NAME") + "." + d.getVar("MEMORY_TYPE") + ".squashfs")
+    d.appendVar("RAUC_IMG_ROOTFS", d.getVar("IMAGE_NAME") + ".squashfs")
 
     d.setVar("RAUC_IMG_KERNEL", d.getVar("DEPLOY_DIR_IMAGE"))
     d.appendVar("RAUC_IMG_KERNEL", "/Image")
