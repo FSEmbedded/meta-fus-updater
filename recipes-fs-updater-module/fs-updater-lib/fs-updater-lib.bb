@@ -2,7 +2,7 @@ SUMMARY = "FS update Framework library"
 SECTION = "libs"
 LICENSE = "CLOSED"
 
-S = "${WORKDIR}"
+S = "${WORKDIR}/fs_updater_lib"
 
 DEPENDS = " \
 	libubootenv \
