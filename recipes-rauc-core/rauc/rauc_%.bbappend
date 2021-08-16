@@ -1,5 +1,9 @@
+
 FILESEXTRAPATHS_prepend := "${THISDIR}/openssl:"
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+
+# includes the PATH_TO_SYSTEM_CONF* variables
+require includes/system_paths.inc
 
 # set path to the rauc keyring, which is installed in the image
 RAUC_KEYRING_FILE = "rauc.cert.pem"
@@ -31,9 +35,9 @@ python () {
 }
 
 do_install_append() {
-	install -m 0644 ${WORKDIR}/system.conf.mmc ${D}${sysconfdir}/rauc/system.conf.mmc
-	install -m 0644 ${WORKDIR}/system.conf.nand ${D}${sysconfdir}/rauc/system.conf.nand
-	rm -f ${D}${sysconfdir}/rauc/system.conf
+	install -m 0644 ${WORKDIR}/system.conf.nand ${D}${NAND_RAUC_SYSTEM_CONF_PATH}
+	install -m 0644 ${WORKDIR}/system.conf.mmc ${D}${EMMC_RAUC_SYSTEM_CONF_PATH}
+	rm -f ${D}${RAUC_SYSTEM_CONF_PATH}
 }
 
 #unset SYSTEMD_SERVICE_${PN}-mark-good
