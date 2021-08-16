@@ -8,10 +8,10 @@ SRC_URI = "file://dynamic_overlay.tar.gz \
 "
 S = "${WORKDIR}/dynamic_overlay"
 
-
 FILES_${PN} = " \
 	/sbin/ \
 	/sbin/preinit \
+	/ramdisk/ \
 "
 
 DEPENDS = "\
