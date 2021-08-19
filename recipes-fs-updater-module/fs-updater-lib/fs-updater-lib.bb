@@ -12,10 +12,6 @@ DEPENDS = " \
 	inicpp \
 "
 
-RDEPENDS_${PN} = " \
-	botan \
-"
-
 SRC_URI = "file://fs_updater_lib.tar.gz"
 
 inherit cmake
