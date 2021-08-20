@@ -14,9 +14,9 @@ SRC_URI = "git://github.com/sbabic/libubootenv;protocol=https"
 SRCREV = "ba7564f5006d09bec51058cf4f5ac90d4dc18b3c"
 
 S = "${WORKDIR}/git"
+DEPENDS = "zlib"
 
 inherit cmake lib_package
-
-DEPENDS = "zlib u-boot-fw-utils"
+EXTRA_OECMAKE = "-DCMAKE_BUILD_TYPE=Release"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
