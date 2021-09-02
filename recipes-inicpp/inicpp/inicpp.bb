@@ -9,7 +9,6 @@ ALLOW_EMPTY_${PN} = "1"
 SRCREV = "1a3ac414f9ccd7ed5d5c0810206d336afd0f36ba"
 SRC_URI = "git://github.com/SemaiCZE/inicpp.git \
 		   file://0001-extend-allowed-characters.patch \
-           file://0001-patch-to-create-static-and-shared-library.patch \
 "
 
 EXTRA_OECMAKE += "	-DINICPP_BUILD_TESTS=off \
@@ -17,55 +16,5 @@ EXTRA_OECMAKE += "	-DINICPP_BUILD_TESTS=off \
 				 "
 S = "${WORKDIR}/git"
 
-#PACKAGES = "${PN}"
-
-FILES_${PN} = " \
-	${libdir} \
-	${libdir}/libinicpp.a \
-    ${libdir}/libinicpp.so \
-    ${libdir}/libinicpp.so.0 \
-	${includedir}/inicpp \
-	${includedir}/inicpp/string_utils.h \
-	${includedir}/inicpp/dll.h \
-	${includedir}/inicpp/schema.h \
-	${includedir}/inicpp/parser.h \
-	${includedir}/inicpp/option.h \
-	${includedir}/inicpp/section.h \
-	${includedir}/inicpp/types.h \
-	${includedir}/inicpp/config.h \
-	${includedir}/inicpp/option_schema.h \
-	${includedir}/inicpp/inicpp.h \
-	${includedir}/inicpp/exception.h \
-	${includedir}/inicpp/section_schema.h \
-"
-
-FILES_${PN}-bin = " \
-	${libdir} \
-    ${libdir}/libinicpp.so \
-    ${libdir}/libinicpp.so.0 \
-"
-
-#INSANE_SKIP_${PN} = "installed-vs-shipped staticdev"
-
-do_install() {
-	install -d ${D}/${includedir}/inicpp
-	install -d ${D}/${libdir}/
-
-	install -m 0755 ${S}/include/inicpp/inicpp.h ${D}/${includedir}/inicpp
-	install -m 0755 ${S}/include/inicpp/dll.h ${D}/${includedir}/inicpp
-	install -m 0755 ${S}/include/inicpp/string_utils.h ${D}/${includedir}/inicpp
-	install -m 0755 ${S}/include/inicpp/schema.h ${D}/${includedir}/inicpp
-	install -m 0755 ${S}/include/inicpp/parser.h ${D}/${includedir}/inicpp
-	install -m 0755 ${S}/include/inicpp/option.h ${D}/${includedir}/inicpp
-	install -m 0755 ${S}/include/inicpp/section.h ${D}/${includedir}/inicpp
-	install -m 0755 ${S}/include/inicpp/types.h ${D}/${includedir}/inicpp
-	install -m 0755 ${S}/include/inicpp/config.h ${D}/${includedir}/inicpp
-	install -m 0755 ${S}/include/inicpp/option_schema.h ${D}/${includedir}/inicpp
-	install -m 0755 ${S}/include/inicpp/inicpp.h ${D}/${includedir}/inicpp
-	install -m 0755 ${S}/include/inicpp/exception.h ${D}/${includedir}/inicpp
-	install -m 0755 ${S}/include/inicpp/section_schema.h ${D}/${includedir}/inicpp
-
-	install -m 0755 ${B}/libinicpp_static.a ${D}/${libdir}/libinicpp.a
-	install -m 0755 ${B}/libinicpp_shared.so ${D}/${libdir}/libinicpp.so.0
-    ln -s -r ${D}/${libdir}/libinicpp.so.0 ${D}/${libdir}/libinicpp.so
-}
+# Means to build the static version
+EXTRA_OECMAKE = " -DINICPP_BUILD_SHARED=off"
