@@ -24,7 +24,6 @@ CORE_IMAGE_EXTRA_INSTALL += " \
 	fs-updater-cli \
 	auto-usb-update \
 	2-stage-boot \
-	application \
 	rauc \
 "
 
@@ -38,3 +37,10 @@ TOOLCHAIN_TARGET_TASK_append  = " tclap tclap-dev"
 TOOLCHAIN_TARGET_TASK_append  = " fs-updater-lib fs-updater-lib-dev fs-updater-lib-staticdev"
 
 TOOLCHAIN_HOST_TASK_append = " nativesdk-cmake nativesdk-make"
+
+
+#### Remove following line if you want to remove the sample application ###
+CORE_IMAGE_EXTRA_INSTALL += "\
+	application \
+	application-config \
+"
