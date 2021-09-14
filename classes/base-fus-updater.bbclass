@@ -1,5 +1,29 @@
+
+do_create_application_image() {
+    local IMAGE_ROOTFS_FUS_UPDATER_BASE=${IMAGE_ROOTFS}/..
+    rm -rf ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/app_image
+    mkdir -p ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/app_image
+    local IMAGE_APP_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/app_image
+
+    cp -a ${IMAGE_ROOTFS}/app/* ${IMAGE_APP_FUS_UPDATER}
+    rm -rf ${IMAGE_ROOTFS}/app
+
+    # Create application image
+    local OUTPUT_IMAGE_NAME=${DEPLOY_DIR_IMAGE}/application_container
+    local APP_KEY=${LAYER_BASE_DIR}/rauc/rauc.key.pem
+    local APPLICATION_ROOT_FOLDER=${IMAGE_APP_FUS_UPDATER}
+    local APPLICATION_IMAGE=${OUTPUT_IMAGE_NAME}_img
+
+	${STAGING_DIR_NATIVE}/usr/bin/package_app -o ${OUTPUT_IMAGE_NAME} -rf ${APPLICATION_ROOT_FOLDER} -ptm ${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs -v ${APPLICATION_VERSION} -kf ${APP_KEY}
+
+    # Copy image into data partition
+    cp -a ${APPLICATION_IMAGE} ${IMAGE_ROOTFS}/rw_fs/root/application/app_a.squashfs
+    cp -a ${APPLICATION_IMAGE} ${IMAGE_ROOTFS}/rw_fs/root/application/app_b.squashfs
+	cp -a ${IMAGE_ROOTFS}/rw_fs/root ${IMAGE_DATA_PARTITION_FUS_UPDATER}
+}
+
 do_create_squashfs_rootfs_images() {
-	# Copy RootFS temporarly for removing of /rw_fs/root/*
+
 	local IMAGE_ROOTFS_FUS_UPDATER_BASE=${IMAGE_ROOTFS}/..
 
 	rm -rf ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
@@ -12,16 +36,17 @@ do_create_squashfs_rootfs_images() {
 	local IMAGE_ROOTFS_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
 
 	cp -a ${IMAGE_ROOTFS}/* ${IMAGE_ROOTFS_FUS_UPDATER}
-	rm -rf ${IMAGE_ROOTFS_FUS_UPDATER}/rw_fs/root/*
-	cp -a ${IMAGE_ROOTFS}/rw_fs/root/* ${IMAGE_DATA_PARTITION_FUS_UPDATER}
 
-	# Create data partition
+    mkdir -p ${IMAGE_ROOTFS}/rw_fs/root/application/current
+    do_create_application_image
+
+	# Create data partition - nand
 	${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
 
-	# Create system partition
+	# Create system partition - nand|emmc
 	${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
 
-	# Create Symlinks
+	# Create symlinks
 	ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.squashfs
 	ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.data-partition-nand.ubifs
 }
@@ -254,12 +279,15 @@ def create_rauc_update_nand(d):
 
     shutil.rmtree(input_dir_nand)
 
-do_create_squashfs_rootfs_images[depends] += "mtd-utils-native:do_populate_sysroot"
-do_create_squashfs_rootfs_images[depends] += "squashfs-tools-native:do_populate_sysroot"
-
-do_image_wic[depends] += "squashfs-tools-native:do_populate_sysroot"
-do_image_wic[depends] += "mtd-utils-native:do_populate_sysroot"
-
 IMAGE_CMD_update_package () {
 	do_create_squashfs_rootfs_images
 }
+
+do_image_update_package[depends] += "mtd-utils-native:do_populate_sysroot"
+do_image_update_package[depends] += "squashfs-tools-native:do_populate_sysroot"
+do_image_update_package[depends] += "application-container-native:do_populate_sysroot"
+
+do_image_wic[recrdeptask] += "do_image_wic do_image_update_package"
+do_image_wic[depends] += "squashfs-tools-native:do_populate_sysroot"
+do_image_wic[depends] += "mtd-utils-native:do_populate_sysroot"
+
