@@ -9,7 +9,6 @@ do_prepare_application_directory() {
 	mv ${WORKDIR}/app ${D}
 }
 
-#addtask do_prepare_application_directory after do_install before do_package
-do_package[prefuncs] += "do_prepare_application_directory "
+addtask do_prepare_application_directory after do_install before do_package
 
 FILES_${PN} = "app/* "
