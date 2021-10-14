@@ -15,6 +15,7 @@ SRCREV = "ba7564f5006d09bec51058cf4f5ac90d4dc18b3c"
 
 S = "${WORKDIR}/git"
 DEPENDS = "zlib"
+REPENDS_${PN} = "u-boot-fw-config"
 
 inherit cmake lib_package
 EXTRA_OECMAKE = "-DCMAKE_BUILD_TYPE=Release"
