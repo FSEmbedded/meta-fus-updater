@@ -1,4 +1,8 @@
 
+remove_fw_env_config() {
+  rm ${IMAGE_ROOTFS}/etc/fw_env.config
+}
+
 do_create_application_image() {
     local IMAGE_ROOTFS_FUS_UPDATER_BASE=${IMAGE_ROOTFS}/..
     rm -rf ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/app_image
@@ -35,10 +39,14 @@ do_create_squashfs_rootfs_images() {
 	local IMAGE_DATA_PARTITION_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/data_partition
 	local IMAGE_ROOTFS_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
 
+    	mkdir -p ${IMAGE_ROOTFS}/rw_fs/root/application/current
 	cp -a ${IMAGE_ROOTFS}/* ${IMAGE_ROOTFS_FUS_UPDATER}
 
-    mkdir -p ${IMAGE_ROOTFS}/rw_fs/root/application/current
+	rm -rf ${IMAGE_ROOTFS_FUS_UPDATER}/app
+
     do_create_application_image
+
+	cp -a ${IMAGE_ROOTFS}/rw_fs/root/* ${IMAGE_DATA_PARTITION_FUS_UPDATER}
 
 	# Create data partition - nand
 	${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
@@ -290,4 +298,6 @@ do_image_update_package[depends] += "application-container-native:do_populate_sy
 do_image_wic[recrdeptask] += "do_image_wic do_image_update_package"
 do_image_wic[depends] += "squashfs-tools-native:do_populate_sysroot"
 do_image_wic[depends] += "mtd-utils-native:do_populate_sysroot"
+
+ROOTFS_POSTPROCESS_COMMAND += "remove_fw_env_config; "
 
