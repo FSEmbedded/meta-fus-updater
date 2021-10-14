@@ -12,6 +12,12 @@ DEPENDS = " \
 	inicpp \
 "
 
+RDEPENDS_${PN} = "\
+		libubootenv \
+		zlib \
+		botan \
+"
+
 SRC_URI = "file://fs_updater_lib.tar.gz"
 
 inherit cmake
