@@ -1,3 +1,0 @@
-# eMMC device name      device offset   Env. size        Flash sector size       Number of sectors
-/dev/mmcblk2boot0       0x00100000      0x0004000        0x000000200
-/dev/mmcblk2boot0       0x00104000      0x0004000        0x000000200
