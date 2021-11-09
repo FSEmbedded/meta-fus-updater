@@ -20,8 +20,6 @@ CORE_IMAGE_EXTRA_INSTALL += " \
 	libubootenv-bin \
 	u-boot-fw-config \
 	dynamic-overlay \
-	python3-fs-updater-lib \
-	python3-fs-updater-cli \
 	fs-updater-cli \
 	auto-usb-update \
 	2-stage-boot \
