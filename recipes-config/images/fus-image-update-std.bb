@@ -1,7 +1,7 @@
 python(){
     if "fsimx8mm" == d.getVar("MACHINE"):
         d.setVar("WKS_FILE", "fus-updater-sdcard.wks.in")
-        d.appendVar("IMAGE_FSTYPES", " wic")
+        d.setVar("IMAGE_FSTYPES", "wic update_package")
     else:
         machine = d.getVar("MACHINE")
         bb.fatal(f"The {machine} is not supported/tested for meta-fus-updater layer")
@@ -9,7 +9,6 @@ python(){
 
 addtask do_create_update_package after do_image_wic before do_image_complete
 
-IMAGE_FSTYPES_append = " update_package"
 DESCRIPTION = "F&S standard update image based on X11 and matchbox"
 LICENSE = "MIT"
 
