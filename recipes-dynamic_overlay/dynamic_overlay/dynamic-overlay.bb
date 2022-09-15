@@ -12,13 +12,14 @@ S = "${WORKDIR}/dynamic_overlay"
 FILES_${PN} = " \
 	/sbin/ \
 	/sbin/preinit \
-	/ramdisk/ \
+	/ramdisk_hw_conf \
 "
 
 DEPENDS = "\
 	inicpp \
 	libubootenv \
 	zlib \
+	jsoncpp \
 "
 # Set extra C-Make variables.
 EXTRA_OECMAKE += " -DRAUC_SYSTEM_CONF_PATH=${RAUC_SYSTEM_CONF_PATH}"
