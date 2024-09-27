@@ -8,21 +8,21 @@ path=rauc.cert.pem
 use-bundle-signing-time=true
 
 [slot.rootfs.0]
-device=/dev/mmcblk2p7
+device=/dev/mmcblk2p5
 type=raw
 parent=boot.0
 
 [slot.rootfs.1]
-device=/dev/mmcblk2p8
+device=/dev/mmcblk2p6
 type=raw
 parent=boot.1
 
 [slot.boot.0]
-device=/dev/mmcblk2p5
+device=/dev/mmcblk2p1
 type=raw
 bootname=A
 
 [slot.boot.1]
-device=/dev/mmcblk2p6
+device=/dev/mmcblk2p2
 type=raw
 bootname=B
