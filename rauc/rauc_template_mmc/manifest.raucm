@@ -12,3 +12,6 @@ hooks=post-install;
 [image.boot]
 filename=boot.vfat
 hooks=post-install;
+
+[bundle]
+format=verity
