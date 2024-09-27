@@ -1,6 +1,6 @@
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/openssl:"
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/openssl:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 # includes the PATH_TO_SYSTEM_CONF* variables
 require includes/system_paths.inc
@@ -8,10 +8,10 @@ require includes/system_paths.inc
 # set path to the rauc keyring, which is installed in the image
 RAUC_KEYRING_FILE = "rauc.cert.pem"
 
-RDEPENDS_${PN} = " rauc-mark-good"
+RDEPENDS:${PN} = " rauc-mark-good"
 DEPENDS = "squashfs-tools-native rauc-native "
 
-SRC_URI_append := " \
+SRC_URI:append := " \
 	file://system.conf.mmc \
 	file://system.conf.nand \
 	file://rauc.cert.pem \
@@ -34,7 +34,7 @@ python () {
             bb.fatal(f"FIRMWARE_VERSION :\"{var} is not convertable into int")
 }
 
-do_install_append() {
+do_install:append() {
 	install -m 0644 ${WORKDIR}/system.conf.nand ${D}${NAND_RAUC_SYSTEM_CONF_PATH}
 	install -m 0644 ${WORKDIR}/system.conf.mmc ${D}${EMMC_RAUC_SYSTEM_CONF_PATH}
 	rm -f ${D}${RAUC_SYSTEM_CONF_PATH}
@@ -54,14 +54,14 @@ do_install_append() {
 #IMAGE_INSTALL_remove = "${PN}-mark-good"
 #RRECOMMENDS_${PN}_remove = "${PN}-mark-good"
 
-do_install_append() {
+do_install:append() {
 	install -d ${D}${sysconfdir}/rauc/bundle
 	echo "${FIRMWARE_VERSION}" > ${D}${sysconfdir}/fw_version
 #	rm  ${D}${systemd_unitdir}/system/rauc-mark-good.service
 #	rm  ${D}${sysconfdir}/init.d/rauc-mark-good
 }
 
-FILES_${PN} += "\
+FILES:${PN} += "\
   /rw_fs/root \
   ${sysconfdir}/rauc/bundle \
   ${sysconfdir}/fw_version \
