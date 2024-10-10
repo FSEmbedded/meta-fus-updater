@@ -1,6 +1,19 @@
+# F&S base functions to create update images
+
+# enviroments to create application image
+APPLICATION_VERSION ?="20241019"
+APPLICATION_CONTAINER_NAME ?= "application_container"
+# enviroments to create firmware image
+FIRMWARE_VERSION ?= "20241019"
+
+FS_PROVISIONING_SERVICE_DIR_NAME ?="fs-provisioning"
+
+FSUP_IMAGE_DIR_NAME ?="fsup-framework-bin"
+FSUP_TEMPLATE_FILE_NAME ?= "fsupdate-template.json"
+
 
 remove_fw_env_config() {
-  rm ${IMAGE_ROOTFS}/etc/fw_env.config
+    rm -f ${IMAGE_ROOTFS}/etc/fw_env.config
 }
 
 do_create_application_image() {
@@ -9,56 +22,61 @@ do_create_application_image() {
     mkdir -p ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/app_image
     local IMAGE_APP_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/app_image
 
-    cp -a ${IMAGE_ROOTFS}/app/* ${IMAGE_APP_FUS_UPDATER}
-    rm -rf ${IMAGE_ROOTFS}/app
+    if [ -d ${DEPLOY_DIR_IMAGE}/app ]; then
+        cp -a ${DEPLOY_DIR_IMAGE}/app/* ${IMAGE_APP_FUS_UPDATER}
+    fi
 
     # Create application image
-    local OUTPUT_IMAGE_NAME=${DEPLOY_DIR_IMAGE}/application_container
+    local OUTPUT_IMAGE_NAME=${DEPLOY_DIR_IMAGE}/${APPLICATION_CONTAINER_NAME}
     local APP_KEY=${LAYER_BASE_DIR}/rauc/rauc.key.pem
     local APPLICATION_ROOT_FOLDER=${IMAGE_APP_FUS_UPDATER}
     local APPLICATION_IMAGE=${OUTPUT_IMAGE_NAME}_img
+    local app_version=${APPLICATION_VERSION}
 
-	${STAGING_DIR_NATIVE}/usr/bin/package_app -o ${OUTPUT_IMAGE_NAME} -rf ${APPLICATION_ROOT_FOLDER} -ptm ${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs -v ${APPLICATION_VERSION} -kf ${APP_KEY}
+    ${STAGING_DIR_NATIVE}/usr/bin/package_app -o ${OUTPUT_IMAGE_NAME} -rf ${APPLICATION_ROOT_FOLDER} -ptm ${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs -v ${app_version} -kf ${APP_KEY}
 
     # Copy image into data partition
     cp -a ${APPLICATION_IMAGE} ${IMAGE_ROOTFS}/rw_fs/root/application/app_a.squashfs
     cp -a ${APPLICATION_IMAGE} ${IMAGE_ROOTFS}/rw_fs/root/application/app_b.squashfs
-	cp -a ${IMAGE_ROOTFS}/rw_fs/root ${IMAGE_DATA_PARTITION_FUS_UPDATER}
+    cp -a ${IMAGE_ROOTFS}/rw_fs/root ${IMAGE_DATA_PARTITION_FUS_UPDATER}
+    mkdir -p ${IMAGE_ROOTFS}/adu
 }
 
 do_create_squashfs_rootfs_images() {
 
-	local IMAGE_ROOTFS_FUS_UPDATER_BASE=${IMAGE_ROOTFS}/..
+    local IMAGE_ROOTFS_FUS_UPDATER_BASE=${IMAGE_ROOTFS}/..
 
-	rm -rf ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
-	rm -rf ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/data_partition
+    rm -rf ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
+    rm -rf ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/data_partition
 
-	mkdir -p ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
-	mkdir -p ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/data_partition
+    mkdir -p ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
+    mkdir -p ${IMAGE_ROOTFS_FUS_UPDATER_BASE}/data_partition
 
-	local IMAGE_DATA_PARTITION_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/data_partition
-	local IMAGE_ROOTFS_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
+    local IMAGE_DATA_PARTITION_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/data_partition
+    local IMAGE_ROOTFS_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
 
-    	mkdir -p ${IMAGE_ROOTFS}/rw_fs/root/application/current
-	cp -a ${IMAGE_ROOTFS}/* ${IMAGE_ROOTFS_FUS_UPDATER}
+    mkdir -p ${IMAGE_ROOTFS}/rw_fs/root/application/current
+    cp -a ${IMAGE_ROOTFS}/* ${IMAGE_ROOTFS_FUS_UPDATER}
 
-	rm -rf ${IMAGE_ROOTFS_FUS_UPDATER}/app
+    rm -rf ${IMAGE_ROOTFS_FUS_UPDATER}/app
 
     do_create_application_image
 
-	cp -a ${IMAGE_ROOTFS}/rw_fs/root/* ${IMAGE_DATA_PARTITION_FUS_UPDATER}
+    cp -a ${IMAGE_ROOTFS}/rw_fs/root/* ${IMAGE_DATA_PARTITION_FUS_UPDATER}
 
-	# Create data partition - nand
-	${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
+    # Create data partition - nand
+    ${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
 
-	# Create system partition - nand|emmc
-	${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
+    # Create system partition - nand|emmc
+    ${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
 
-	# Create symlinks
-	ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.squashfs
-	ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.data-partition-nand.ubifs
+    # Create symlinks
+    # TODO:
+    ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.squashfs
+    ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.data-partition-nand.ubifs
 }
 
+# called by addtask in fus-image-update-std
 python do_create_update_package() {
     d.setVar("RAUC_BINARY", d.getVar("DEPLOY_DIR_IMAGE"))
     d.appendVar("RAUC_BINARY", "/")
@@ -88,28 +106,31 @@ python do_create_update_package() {
     d.setVar("RAUC_KEY", d.getVar("LAYER_BASE_DIR"))
     d.appendVar("RAUC_KEY", "/rauc/rauc.key.pem")
 
-    d.setVar("RAUC_TEMPLATE_EMMC", d.getVar("LAYER_BASE_DIR"))
-    d.appendVar("RAUC_TEMPLATE_EMMC", "/rauc")
-    d.appendVar("RAUC_TEMPLATE_EMMC", "/rauc_template_mmc")
+    image_fstypes = d.getVar('IMAGE_FSTYPES')
 
-    d.setVar("RAUC_TEMPLATE_NAND", d.getVar("LAYER_BASE_DIR"))
-    d.appendVar("RAUC_TEMPLATE_NAND", "/rauc")
-    d.appendVar("RAUC_TEMPLATE_NAND", "/rauc_template_nand")
+    if 'ubifs' in image_fstypes:
+        d.setVar("RAUC_TEMPLATE_NAND", d.getVar("LAYER_BASE_DIR"))
+        d.appendVar("RAUC_TEMPLATE_NAND", "/rauc")
+        d.appendVar("RAUC_TEMPLATE_NAND", "/rauc_template_nand")
+        create_rauc_update_nand(d)
 
-
-    create_rauc_update_mmc(d)
-    create_rauc_update_nand(d)
+    if 'wic.gz' in image_fstypes or 'wic' in image_fstypes:
+        d.setVar("RAUC_TEMPLATE_EMMC", d.getVar("LAYER_BASE_DIR"))
+        d.appendVar("RAUC_TEMPLATE_EMMC", "/rauc")
+        d.appendVar("RAUC_TEMPLATE_EMMC", "/rauc_template_mmc")
+        create_rauc_update_mmc(d)
 }
 
 def create_rauc_update_mmc(d):
     import subprocess as sp
     import parted, shutil, pathlib
-
+    # create directory as unsorted, indexed collection
     identify_partition_by_position = dict()
     ###################################
     # Here youc can adapt the partition layout
-    identify_partition_by_position["1"] = "uboot.img"
-    identify_partition_by_position["5"] = "boot.vfat"
+    # identify_partition_by_position["1"] = "uboot.img"
+    # identify_partition_by_position["5"] = "boot.vfat"
+    identify_partition_by_position["1"] = "boot.vfat"
 
     ##################################
 
@@ -236,7 +257,6 @@ def create_rauc_update_nand(d):
     except:
         bb.fatal("Variable RAUC_TEMPLATE_NAND not defined")
 
-
     dest_dir_nand = os.path.join(d.getVar("DEPLOY_DIR_IMAGE"), "rauc_update_nand")
 
     if os.path.exists(dest_dir_nand):
@@ -287,9 +307,148 @@ def create_rauc_update_nand(d):
 
     shutil.rmtree(input_dir_nand)
 
-IMAGE_CMD_update_package () {
-	do_create_squashfs_rootfs_images
+IMAGE_CMD:update_package () {
+    do_create_squashfs_rootfs_images
 }
+
+create_fsupdate () {
+    local update_description_file=fsupdate-common.json
+    local prov_service_dir_name="${FS_PROVISIONING_SERVICE_DIR_NAME}"
+    local fsup_image_dir_name="${FSUP_IMAGE_DIR_NAME}"
+    local fsup_images_dir=${DEPLOY_DIR_IMAGE}/${fsup_image_dir_name}
+    local fsup_images_work_dir=${fsup_images_dir}/.work
+    local prov_service_home=${DEPLOY_DIR_IMAGE}/${prov_service_dir_name}
+    local update_desc_file=${fsup_images_work_dir}/${update_description_file}
+
+    if [ "$1" = "common" ] || [ "$2" = "common" ]; then
+        bbwarn "value common for first or second argument is not allowed."
+        return 0
+    fi
+
+    args="$1 $2"
+
+    for fsupdate_type in $args
+    do
+        case $fsupdate_type in
+        app)
+            UPDATE_FILE_NAME=${APPLICATION_CONTAINER_NAME}
+            TARGET_UPDATE_SUFFIX=app
+            update_version=${APPLICATION_VERSION}
+            update_handler=fus\/application
+            remove_block=6,14d
+            target_archiv_name=application
+        ;;
+        fw)
+            UPDATE_FILE_NAME=rauc_update_$4.artifact
+            TARGET_UPDATE_SUFFIX=fw
+            update_version=${FIRMWARE_VERSION}
+            update_handler=fus\/firwmware
+            remove_block=14,22d
+            target_archiv_name=firmware_$4
+        ;;
+        *)
+            bbwarn "unknown parameter"
+            return 1
+        esac
+
+        target=update.${TARGET_UPDATE_SUFFIX}
+
+        # create binaries directory with update images
+        mkdir -p ${fsup_images_work_dir}
+        # create update
+        cp -f ${DEPLOY_DIR_IMAGE}/${UPDATE_FILE_NAME} ${fsup_images_work_dir}/${target}
+        # calculate sha256 sum
+        update_sha256sum=$(sha256sum ${fsup_images_work_dir}/${target} | cut -f1 -d' ')
+
+        if [ ! -f "${update_desc_file}" ]; then
+            # copy fsupdate-template.json
+            cp -f ${DEPLOY_DIR_IMAGE}/fsupdate-template.json ${update_desc_file}
+        fi
+        #
+        sed -i "s|<$TARGET_UPDATE_SUFFIX"_update_description">|\"FUS Firmware Update\"|g" ${update_desc_file}
+        sed -i "s|<$TARGET_UPDATE_SUFFIX"_version">|\"$update_version\"|g" ${update_desc_file}
+        sed -i "s|<$TARGET_UPDATE_SUFFIX"_handler">|\"$update_handler\"|g" ${update_desc_file}
+        sed -i "s|<$TARGET_UPDATE_SUFFIX"_sha_hash">|\"$update_sha256sum\"|g" ${update_desc_file}
+
+        cp -f ${update_desc_file} ${fsup_images_work_dir}/fsupdate.json
+
+        # remove firmware/application update block
+        sed -i "$remove_block" ${fsup_images_work_dir}/fsupdate.json
+
+        cd ${fsup_images_work_dir}
+        tar cfvj ${target_archiv_name}.tar.bz2 fsupdate.json $target
+        ${prov_service_home}/addfsheader.sh -t CERT ${fsup_images_work_dir}/${target_archiv_name}.tar.bz2 > ${fsup_images_dir}/${target_archiv_name}.fs
+        rm -f ${fsup_images_work_dir}/fsupdate.json
+    done
+
+    if [ "$3" = "common" ]; then
+        # check param 3 for combinded update
+        cp -f ${update_desc_file} ${fsup_images_work_dir}/fsupdate.json
+        cd ${fsup_images_work_dir}
+        tar cfvj update_$4.tar.bz2 fsupdate.json update.app update.fw
+        ${prov_service_home}/addfsheader.sh -t CERT ${fsup_images_work_dir}/update_$4.tar.bz2 > ${fsup_images_dir}/update_$4.fs
+    fi
+
+    if [ -f "update.app" ]; then
+        rm update.app
+    fi
+
+    if [ -f "update.fw" ]; then
+        rm update.fw
+    fi
+}
+
+create_fsupdate_template () {
+    local fsupdate_template_filename="${DEPLOY_DIR_IMAGE}/${FSUP_TEMPLATE_FILE_NAME}"
+
+    if [ ! -f "${fsupdate_template_filename}" ]; then
+        # create json template content
+        json_content='{
+    "name": "Common F&S Update",
+    "version": "1.0",
+    "images": {
+        "updates" : [
+            {
+                "description": <fw_update_description>,
+                "version": <fw_version>,
+                "handler": <fw_handler>,
+                "file": "update.fw",
+                "hashes": {
+                    "sha256": <fw_sha_hash>
+                }
+            },
+            {
+                "description": <app_update_description>,
+                "version": <app_version>,
+                "handler": <app_handler>,
+                "file": "update.app",
+                "hashes": {
+                    "sha256": <app_sha_hash>
+                }
+            }
+        ]
+    }
+}'
+        # write the content into the template file
+        echo "${json_content}" > ${fsupdate_template_filename}
+    fi
+}
+
+# create update images
+create_update_images () {
+    # create fsupdate template
+    create_fsupdate_template
+    # create fsupdate images for emmc boot device
+    if [[ "${IMAGE_FSTYPES}" == *"ubifs"* ]]; then
+        create_fsupdate app fw common nand
+    fi
+    # create fsupdate images for nand boot device
+    if [[ "${IMAGE_FSTYPES}" =~ wic.gz|wic ]]; then
+        create_fsupdate app fw common emmc
+    fi
+}
+
+IMAGE_POSTPROCESS_COMMAND += "create_update_images; "
 
 do_image_update_package[depends] += "mtd-utils-native:do_populate_sysroot"
 do_image_update_package[depends] += "squashfs-tools-native:do_populate_sysroot"
@@ -298,6 +457,20 @@ do_image_update_package[depends] += "application-container-native:do_populate_sy
 do_image_wic[recrdeptask] += "do_image_wic do_image_update_package"
 do_image_wic[depends] += "squashfs-tools-native:do_populate_sysroot"
 do_image_wic[depends] += "mtd-utils-native:do_populate_sysroot"
+do_image_wic[depends] += "python3-pyparted-native:do_populate_sysroot"
 
 ROOTFS_POSTPROCESS_COMMAND += "remove_fw_env_config; "
 
+do_fsup_image_clean () {
+    # remove fsupdate directory with all images
+    rm -rf "${DEPLOY_DIR_IMAGE}/${FSUP_IMAGE_DIR_NAME}"
+    # remove fsupdate template
+    rm -rf "${DEPLOY_DIR_IMAGE}/${FSUP_TEMPLATE_FILE_NAME}"
+}
+
+do_clean:append () {
+    # call fsup_certs_clean function
+    bb.build.exec_func('do_fsup_image_clean', d)
+}
+
+DISTRO_FEATURES += " rauc"
