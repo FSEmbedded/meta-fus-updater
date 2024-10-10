@@ -1,0 +1,4 @@
+#!/bin/sh
+serviceName=start_application.service
+# enable application start
+ln -sf  /lib/systemd/system/$serviceName /etc/systemd/system/multi-user.target.wants/$serviceName
