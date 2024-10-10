@@ -1,8 +1,7 @@
-PV = "2.18.1"
+PV = "2.19.5"
 SRC_URI = "https://botan.randombit.net/releases/Botan-${PV}.tar.xz"
-SRC_URI[md5sum] = "77c558179f276273e0bf39ef941d36c5"
-SRC_URI[sha256sum] = "f8c7b46222a857168a754a5cc329bb780504122b270018dda5304c98db28ae29"
-LIC_FILES_CHKSUM = "file://license.txt;md5=a02e03c8fa2c5e7b9b3fcc1b9811fd3b"
+SRC_URI[sha256sum] = "dfeea0e0a6f26d6724c4af01da9a7b88487adb2d81ba7c72fcaf52db522c9ad4"
+LIC_FILES_CHKSUM = "file://license.txt;md5=f4ce98476c07c34e1793daa036960fad"
 
 DISABLE_STATIC = ""
 DEPENDS += " sed-native \
