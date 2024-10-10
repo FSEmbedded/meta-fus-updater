@@ -1,8 +1,13 @@
-inherit pypi setuptools3 native
-
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-
 SUMMARY = "Create signed application package"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+
+inherit setuptools3 native
+
+DEPENDS += "python3-native"
+DEPENDS += "python3-pycryptodome-native"
+
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SECTION = "devel/python"
 SRC_URI = "\
 	file://setup.py \
@@ -10,10 +15,6 @@ SRC_URI = "\
 "
 S = "${WORKDIR}"
 
-LICENSE = "CLOSED"
+INSANE_SKIP:${PN} += "build-deps"
 
-RDEPENDS_${PN} = "\
-	python3-native \
-	python3-pycryptodome-native \
-"
-INSANE_SKIP_${PN} += "build-deps"
+BBCLASSEXTEND = "native"
