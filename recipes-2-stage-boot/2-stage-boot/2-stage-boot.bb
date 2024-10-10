@@ -1,18 +1,16 @@
 DESCRIPTION = "Script for mounting applications during boot"
-RDEPENDS_${PN} = "dynamic-overlay busybox"
+RDEPENDS:${PN} = "dynamic-overlay busybox"
 LICENSE = "CLOSED"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}:"
-
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI = "file://preinit.sh"
-S = "${WORKDIR}/"
+S = "${WORKDIR}"
 
-FILES_${PN} = "/sbin \
-	/sbin/preinit.sh \
-"
-
-do_install() {
+do_install:append() {
 	install -d ${D}/sbin
 	install -m 0555 ${S}/preinit.sh ${D}/sbin
 }
+
+PACKAGES += "${PN}-2-stage-boot"
+FILES:${PN}-2-stage-boot = "/sbin/preinit.sh"
