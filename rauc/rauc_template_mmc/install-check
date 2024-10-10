@@ -1,5 +1,10 @@
 #!/bin/sh
 
+function checksum() {
+    local BS=4194304 # 4Mb
+    dd bs=${BS} count=1 if=$1 | sha256sum | awk '{ print $1 }'
+}
+
 case "$1" in
         slot-post-install)
                 env > /tmp/log
@@ -10,16 +15,16 @@ case "$1" in
                 fi
                 export RAUC_IMAGE_NAME="${RAUC_BUNDLE_MOUNT_POINT}/${RAUC_IMAGE_NAME}"
                 export SIZE=$(wc -c < $RAUC_IMAGE_NAME)
-                export RAUC_IMAGE_DIGEST=$(sha256sum $RAUC_IMAGE_NAME | awk '{ print $1 }')
+                export RAUC_IMAGE_DIGEST=$(checksum "$RAUC_IMAGE_NAME")
                 sync && echo 3 > /proc/sys/vm/drop_caches
-        if ( "$(dd bs=$SIZE count=1 if=$RAUC_SLOT_DEVICE | sha256sum | awk '{ print $1 }')" != "$RAUC_IMAGE_DIGEST" ); then
-                echo $RAUC_SLOT_DEVICE >> /tmp/log
-                                echo $SIZE >> /tmp/log
-                                echo $RAUC_IMAGE_NAME >> /tmp/log
-                echo "$(dd bs=$SIZE count=1 if=$RAUC_SLOT_DEVICE | sha256sum)" >> /tmp/log
-                echo "$RAUC_IMAGE_DIGEST  -" >> /tmp/log
-                exit 100
-        fi
+                if ( "$(checksum "$RAUC_SLOT_DEVICE")" != "$RAUC_IMAGE_DIGEST" ); then
+                        echo $RAUC_SLOT_DEVICE >> /tmp/log
+                        echo $SIZE >> /tmp/log
+                        echo $RAUC_IMAGE_NAME >> /tmp/log
+                        echo "$(checksum "$RAUC_SLOT_DEVICE")" >> /tmp/log
+                        echo "$RAUC_IMAGE_DIGEST  -" >> /tmp/log
+                        exit 100
+                fi
                 ;;
         *)
                 exit 99
