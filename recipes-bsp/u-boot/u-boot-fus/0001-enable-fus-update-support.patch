@@ -1,7 +1,0 @@
---- a/configs/fsimx8mm_defconfig	2021-03-31 13:36:41.974394063 +0000
-+++ b/configs/fsimx8mm_defconfig	2021-05-26 13:09:24.621104104 +0000
-@@ -86,3 +86,4 @@
- #CONFIG_VIDEO=y
- #CONFIG_IMX_SEC_MIPI_DSI=y
- #CONFIG_NT35521=y
-+CONFIG_FS_UPDATE_SUPPORT=y
