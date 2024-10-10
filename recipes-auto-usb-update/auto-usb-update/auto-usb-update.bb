@@ -1,21 +1,21 @@
 # The udev rules for automatically calling the update mechanism
 
 DESCRIPTION = "udev rule for autoupdate"
-RDEPENDS_${PN} = "udev"
+RDEPENDS:${PN} = "udev"
 LICENSE = "CLOSED"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI = "file://99-fus-updater-usb-auto-mount.rules \
 		   file://usb_fs_updater.sh \
 "
-S = "${WORKDIR}/"
+S = "${WORKDIR}"
 
-FILES_${PN} += " /etc/udev/rules.d/99-fus-updater-usb-auto-mount.rules \
+FILES:${PN} += " /etc/udev/rules.d/99-fus-updater-usb-auto-mount.rules \
 				 /usr/libexec/usb_fs_updater.sh \
 "
 
-do_install(){
+do_install:append(){
 	install -d ${D}/etc/udev/rules.d/
 	install -d ${D}/usr/libexec/
 
