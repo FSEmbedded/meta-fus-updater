@@ -35,34 +35,15 @@ python () {
 }
 
 do_install:append() {
-	install -m 0644 ${WORKDIR}/system.conf.nand ${D}${NAND_RAUC_SYSTEM_CONF_PATH}
-	install -m 0644 ${WORKDIR}/system.conf.mmc ${D}${EMMC_RAUC_SYSTEM_CONF_PATH}
-	rm -f ${D}${RAUC_SYSTEM_CONF_PATH}
-}
-
-#unset SYSTEMD_SERVICE_${PN}-mark-good
-#unset INITSCRIPT_PACKAGES
-#unset INITSCRIPT_NAME_${PN}-mark-good
-#unset INITSCRIPT_PARAMS_${PN}-mark-good
-#unset RRECOMMENDS_${PN}
-#unset FILES_${PN}-mark-good
-
-#PACKAGES_remove = "${PN}-mark-good"
-#RDEPENDS_remove = "${PN}-mark-good"
-#SYSTEMD_PACKAGES_remove = "${PN}-mark-good"
-#INITSCRIPT_NAME = "dummy"
-#IMAGE_INSTALL_remove = "${PN}-mark-good"
-#RRECOMMENDS_${PN}_remove = "${PN}-mark-good"
-
-do_install:append() {
-	install -d ${D}${sysconfdir}/rauc/bundle
-	echo "${FIRMWARE_VERSION}" > ${D}${sysconfdir}/fw_version
-#	rm  ${D}${systemd_unitdir}/system/rauc-mark-good.service
-#	rm  ${D}${sysconfdir}/init.d/rauc-mark-good
+    install -m 0644 ${WORKDIR}/system.conf.nand ${D}${NAND_RAUC_SYSTEM_CONF_PATH}
+    install -m 0644 ${WORKDIR}/system.conf.mmc ${D}${EMMC_RAUC_SYSTEM_CONF_PATH}
+    rm -f ${D}${RAUC_SYSTEM_CONF_PATH}
+    install -d ${D}${sysconfdir}/rauc/bundle
+    echo "${FIRMWARE_VERSION}" > ${D}${sysconfdir}/fw_version
 }
 
 FILES:${PN} += "\
-  /rw_fs/root \
-  ${sysconfdir}/rauc/bundle \
-  ${sysconfdir}/fw_version \
-"
+    /rw_fs/root \
+    ${sysconfdir}/rauc/bundle \
+    ${sysconfdir}/fw_version \
+    "
