@@ -25,11 +25,13 @@ DEPENDS = " \
     jsoncpp \
     zlib \
     inicpp \
+    libarchive \
     "
 
 RDEPENDS:${PN} = "\
-		libubootenv \
-		zlib \
-		botan \
-"
+    libubootenv \
+    zlib \
+    botan \
+    libarchive \
+    "
 EXTRA_OECMAKE += "-DBOTAN2:STRING=${STAGING_DIR_TARGET}/usr/include/botan-2/"
