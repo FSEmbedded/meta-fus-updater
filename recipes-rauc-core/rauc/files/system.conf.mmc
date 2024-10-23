@@ -1,5 +1,5 @@
 [system]
-compatible=rauc-demo-mx8mm
+compatible=fsup-framework
 bootloader=uboot
 mountprefix=/mnt/rauc
 

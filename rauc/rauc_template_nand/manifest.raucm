@@ -1,6 +1,6 @@
 [update]
-compatible=rauc-demo-mx8mm
-version=2020.10-08
+compatible=fsup-framework
+version=2024.10.23
 
 [hooks]
 filename=install-check
