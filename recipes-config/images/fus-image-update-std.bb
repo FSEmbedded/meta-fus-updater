@@ -20,13 +20,13 @@ addtask do_create_update_package after do_image_wic before do_image_complete
 require recipes-config/images/fus-image-std.bb
 
 CORE_IMAGE_EXTRA_INSTALL += " \
-	libubootenv-bin \
-	u-boot-fw-config \
-	dynamic-overlay \
-	fs-updater-cli \
-	auto-usb-update \
-	2-stage-boot \
-	rauc \
+    libubootenv-bin \
+    u-boot-fw-config \
+    dynamic-overlay \
+    fs-updater-cli \
+    auto-usb-update \
+    2-stage-boot \
+    rauc \
 "
 
 TOOLCHAIN_TARGET_TASK:append  = " kernel-devsrc"
@@ -41,7 +41,5 @@ TOOLCHAIN_TARGET_TASK:append  = " fs-updater-lib fs-updater-lib-dev fs-updater-l
 TOOLCHAIN_HOST_TASK:append = " nativesdk-cmake nativesdk-make"
 
 #### Remove following line if you want to remove the sample application ###
-CORE_IMAGE_EXTRA_INSTALL += "\
-	application \
-"
+CORE_IMAGE_EXTRA_INSTALL += " application"
 IMAGE_INSTALL:append = " rauc"
