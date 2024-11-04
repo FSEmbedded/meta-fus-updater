@@ -64,16 +64,21 @@ do_create_squashfs_rootfs_images() {
 
     cp -a ${IMAGE_ROOTFS}/rw_fs/root/* ${IMAGE_DATA_PARTITION_FUS_UPDATER}
 
-    # Create data partition - nand
-    ${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
+    # create fsupdate images for nand boot device
+    if [[ "${IMAGE_FSTYPES}" == *"ubifs"* ]]; then
+        # Create data partition - nand
+        ${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} \
+            -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
+        ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.data-partition-nand.ubifs
+    fi
 
-    # Create system partition - nand|emmc
-    ${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
-
-    # Create symlinks
-    # TODO:
-    ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.squashfs
-    ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.data-partition-nand.ubifs
+    # create fsupdate images for emmc boot device
+    if [[ "${IMAGE_FSTYPES}" =~ wic.gz|wic ]]; then
+        # Create system partition - nand|emmc
+        ${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} \
+            ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
+        ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.squashfs
+    fi
 }
 
 # called by addtask in fus-image-update-std
@@ -332,19 +337,19 @@ create_fsupdate () {
         case $fsupdate_type in
         app)
             UPDATE_FILE_NAME=${APPLICATION_CONTAINER_NAME}
-            TARGET_UPDATE_SUFFIX=app
+            TARGET_UPDATE_SUFFIX="app"
             update_version=${APPLICATION_VERSION}
-            update_handler=fus\/application
+            update_handler="fus\/application"
             remove_block=6,14d
-            target_archiv_name=application
+            target_archiv_name="application"
         ;;
         fw)
-            UPDATE_FILE_NAME=rauc_update_$4.artifact
-            TARGET_UPDATE_SUFFIX=fw
+            UPDATE_FILE_NAME="rauc_update_${4}.artifact"
+            TARGET_UPDATE_SUFFIX="fw"
             update_version=${FIRMWARE_VERSION}
-            update_handler=fus\/firwmware
+            update_handler="fus\/firwmware"
             remove_block=14,22d
-            target_archiv_name=firmware_$4
+            target_archiv_name="firmware_${4}"
         ;;
         *)
             bbwarn "unknown parameter"
@@ -365,10 +370,10 @@ create_fsupdate () {
             cp -f ${DEPLOY_DIR_IMAGE}/fsupdate-template.json ${update_desc_file}
         fi
         #
-        sed -i "s|<$TARGET_UPDATE_SUFFIX"_update_description">|\"FUS Firmware Update\"|g" ${update_desc_file}
-        sed -i "s|<$TARGET_UPDATE_SUFFIX"_version">|\"$update_version\"|g" ${update_desc_file}
-        sed -i "s|<$TARGET_UPDATE_SUFFIX"_handler">|\"$update_handler\"|g" ${update_desc_file}
-        sed -i "s|<$TARGET_UPDATE_SUFFIX"_sha_hash">|\"$update_sha256sum\"|g" ${update_desc_file}
+        sed -i "s|<${TARGET_UPDATE_SUFFIX}_update_description>|\"FUS Firmware Update\"|g" "${update_desc_file}"
+        sed -i "s|<${TARGET_UPDATE_SUFFIX}_version>|\"${update_version}\"|g" "${update_desc_file}"
+        sed -i "s|<${TARGET_UPDATE_SUFFIX}_handler>|\"${update_handler}\"|g" "${update_desc_file}"
+        sed -i "s|<${TARGET_UPDATE_SUFFIX}_sha_hash>|\"${update_sha256sum}\"|g" "${update_desc_file}"
 
         cp -f ${update_desc_file} ${fsup_images_work_dir}/fsupdate.json
 
@@ -377,7 +382,8 @@ create_fsupdate () {
 
         cd ${fsup_images_work_dir}
         tar cfvj ${target_archiv_name}.tar.bz2 fsupdate.json $target
-        ${prov_service_home}/addfsheader.sh -t CERT ${fsup_images_work_dir}/${target_archiv_name}.tar.bz2 > ${fsup_images_dir}/${target_archiv_name}.fs
+        ${prov_service_home}/addfsheader.sh -t CERT ${fsup_images_work_dir}/${target_archiv_name}.tar.bz2 > \
+            ${fsup_images_dir}/${target_archiv_name}.fs
         rm -f ${fsup_images_work_dir}/fsupdate.json
     done
 
@@ -385,8 +391,9 @@ create_fsupdate () {
         # check param 3 for combinded update
         cp -f ${update_desc_file} ${fsup_images_work_dir}/fsupdate.json
         cd ${fsup_images_work_dir}
-        tar cfvj update_$4.tar.bz2 fsupdate.json update.app update.fw
-        ${prov_service_home}/addfsheader.sh -t CERT ${fsup_images_work_dir}/update_$4.tar.bz2 > ${fsup_images_dir}/update_$4.fs
+        tar cfvj update_${4}.tar.bz2 fsupdate.json update.app update.fw
+        ${prov_service_home}/addfsheader.sh -t CERT ${fsup_images_work_dir}/update_${4}.tar.bz2 > \
+            ${fsup_images_dir}/update_${4}.fs
     fi
 
     if [ -f "update.app" ]; then
