@@ -53,9 +53,9 @@ The layer provides additional image:
 
 ## Table of contents
 
-- [Layer Overview](/docs/layer-description.md)
+- [Layer Overview](docs/layer-description.md)
 - Core Components of FSUP Framework
-    - [F&S Updater CLI](/docs/fus-updater.md)
-    - [Dynamic Overlay](/docs/dynamic-overlay.md)
-- [Automatic Update from USB Stick](/docs/automatic-update.md)
-- [Structure of Deploy Directory](/docs/deployment-overview.md)
+    - [F&S Updater CLI](docs/fus-updater.md)
+    - [Dynamic Overlay](docs/dynamic-overlay.md)
+- [Automatic Update from USB Stick](docs/automatic-update.md)
+- [Structure of Deploy Directory](docs/deployment-overview.md)
