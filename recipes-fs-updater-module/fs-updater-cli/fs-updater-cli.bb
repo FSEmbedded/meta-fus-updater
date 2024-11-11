@@ -13,8 +13,8 @@ SRC_URI = "\
 
 inherit cmake
 
-SRCREV ?= ""
-FSUPCLI_SRC_URI ?= ""
+SRCREV ?= "25ad75109dba46d54dc9e2a20c8001df827e712c"
+FSUPCLI_SRC_URI ?= "git://github.com/FSEmbedded/fs-updater-cli.git"
 FSUPCLI_GIT_BRANCH ?= "master"
 
 SRC_URI = " \
