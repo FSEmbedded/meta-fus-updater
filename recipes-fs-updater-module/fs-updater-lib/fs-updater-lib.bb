@@ -8,8 +8,8 @@ SECTION = "libs"
 
 inherit cmake
 
-SRCREV ?= ""
-FSUPLIB_SRC_URI ?= ""
+SRCREV ?= "6ccd1ff23a01410f07a0d39464abf6eb66f3469f"
+FSUPLIB_SRC_URI ?= "git://github.com/FSEmbedded/fs-updater-lib.git"
 FSUPLIB_GIT_BRANCH ?= "master"
 
 SRC_URI = " \
