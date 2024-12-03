@@ -11,6 +11,10 @@ FS_PROVISIONING_SERVICE_DIR_NAME ?="fs-provisioning"
 FSUP_IMAGE_DIR_NAME ?="fsup-framework-bin"
 FSUP_TEMPLATE_FILE_NAME ?= "fsupdate-template.json"
 
+# install host scripts for the build process
+DEPENDS = " \
+    fus-installscript-native \
+"
 
 remove_fw_env_config() {
     rm -f ${IMAGE_ROOTFS}/etc/fw_env.config
@@ -382,7 +386,8 @@ create_fsupdate () {
 
         cd ${fsup_images_work_dir}
         tar cfvj ${target_archiv_name}.tar.bz2 fsupdate.json $target
-        ${prov_service_home}/addfsheader.sh -t CERT ${fsup_images_work_dir}/${target_archiv_name}.tar.bz2 > \
+        # use addfsheader script from native package
+        addfsheader.sh -t CERT ${fsup_images_work_dir}/${target_archiv_name}.tar.bz2 > \
             ${fsup_images_dir}/${target_archiv_name}.fs
         rm -f ${fsup_images_work_dir}/fsupdate.json
     done
@@ -392,7 +397,8 @@ create_fsupdate () {
         cp -f ${update_desc_file} ${fsup_images_work_dir}/fsupdate.json
         cd ${fsup_images_work_dir}
         tar cfvj update_${4}.tar.bz2 fsupdate.json update.app update.fw
-        ${prov_service_home}/addfsheader.sh -t CERT ${fsup_images_work_dir}/update_${4}.tar.bz2 > \
+        # use addfsheader script from native package
+        addfsheader.sh -t CERT ${fsup_images_work_dir}/update_${4}.tar.bz2 > \
             ${fsup_images_dir}/update_${4}.fs
     fi
 
