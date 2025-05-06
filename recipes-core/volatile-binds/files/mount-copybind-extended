@@ -1,0 +1,192 @@
+#!/bin/sh
+#
+# Flexible mount-copybind script with configurable mount types and paths
+# Supports tmpfs, overlay and persistent storage strategies
+
+if [ $# -lt 2 ]; then
+    echo >&2 "Usage: $0 spec mountpoint [OPTIONS]"
+    exit 1
+fi
+
+# e.g. /var/volatile/lib
+spec=$1
+# e.g. /var/lib
+mountpoint=$2
+if [ $# -gt 2 ]; then
+    options=$3
+else
+    options=
+fi
+[ -n "$options" ] && options=",$options"
+
+# Default to /rootfs if not specified
+PERSISTENT_ROOT=${MOUNT_COPYBIND_PERSISTENT_ROOT:-/rootfs}
+# Default mount type is overlay if not specified
+MOUNT_TYPE=${MOUNT_COPYBIND_TYPE:-overlay}
+# Default size for tmpfs mounts - ensure proper format with M suffix
+DEFAULT_SIZE="16M"
+TMPFS_SIZE=${MOUNT_COPYBIND_SIZE:-$DEFAULT_SIZE}
+
+# Get relative path and base directory name
+relpath=$(echo "$mountpoint" | sed 's,^/,,')
+basedir=$(basename "$mountpoint")
+
+# Ensure the parent directories exist
+mkdir -p "${spec%/*}"
+
+# Function to handle SELinux context if available
+handle_selinux() {
+    local path="$1"
+    if command -v selinuxenabled > /dev/null 2>&1; then
+        if selinuxenabled; then
+            restorecon -R "$path"
+        fi
+    fi
+}
+
+# Safer logging function that doesn't depend on /var/log being available
+log_msg() {
+    # Only try to log if we're not processing /var/log itself
+    if ! echo "$mountpoint" | grep -q "^/var/log"; then
+        # Try to create log directory, but continue if it fails
+        mkdir -p /var/log/volatile-mounts >/dev/null 2>&1
+        if [ -d "/var/log/volatile-mounts" ]; then
+            echo "$(date '+%Y-%m-%d %H:%M:%S') $1" >> "/var/log/volatile-mounts/$(echo "$relpath" | tr '/' '-').log" 2>/dev/null
+        fi
+    fi
+    # Always echo to stderr for debugging
+    echo >&2 "mount-copybind[$mountpoint]: $1"
+}
+
+log_msg "Starting mount for $mountpoint (type: $MOUNT_TYPE)"
+
+if [ -d "$mountpoint" ]; then
+    # Handle directory mounting
+    log_msg "Mounting directory with strategy: $MOUNT_TYPE"
+    
+    # Create the spec directory if it doesn't exist
+    if [ ! -d "$spec" ]; then
+        mkdir -p "$spec"
+        handle_selinux "$spec"
+        log_msg "Created spec directory: $spec"
+    fi
+    
+    # Mount based on the configured type
+    case "$MOUNT_TYPE" in
+        tmpfs)
+            # Ensure size has proper format (number followed by M/G/K)
+            # Strip any whitespace and ensure it ends with proper suffix
+            sanitized_size=$(echo "$TMPFS_SIZE" | tr -d ' ')
+            if ! echo "$sanitized_size" | grep -Eq '[0-9]+[MmGgKk]?$'; then
+                # If format is invalid, use default
+                sanitized_size="$DEFAULT_SIZE"
+            fi
+            log_msg "Mounting as tmpfs with size: $sanitized_size"
+            
+            if mount -t tmpfs -o "mode=0755,size=$sanitized_size" tmpfs "$mountpoint"; then
+                log_msg "Successfully mounted tmpfs"
+            else
+                log_msg "Failed to mount tmpfs, falling back to bind mount"
+                # Fall back to bind mount if tmpfs fails
+                cp -aPR "$mountpoint"/. "$spec/" 2>/dev/null
+                mount -o "bind$options" "$spec" "$mountpoint"
+            fi
+            ;;
+            
+        persistent)
+            log_msg "Setting up persistent storage at $PERSISTENT_ROOT/$relpath"
+            # Ensure persistent directory exists
+            mkdir -p "$PERSISTENT_ROOT/$relpath"
+            
+            # Copy existing content if persistent directory is empty
+            if [ -z "$(ls -A "$PERSISTENT_ROOT/$relpath" 2>/dev/null)" ]; then
+                log_msg "Copying content to persistent storage"
+                cp -aPR "$mountpoint"/. "$PERSISTENT_ROOT/$relpath/" 2>/dev/null
+            fi
+            
+            # Bind mount the persistent directory
+            if mount -o "bind$options" "$PERSISTENT_ROOT/$relpath" "$mountpoint"; then
+                log_msg "Successfully mounted persistent directory"
+            else
+                log_msg "Failed to mount persistent directory, falling back to volatile"
+                # Fall back to volatile bind mount
+                cp -aPR "$mountpoint"/. "$spec/" 2>/dev/null
+                mount -o "bind$options" "$spec" "$mountpoint"
+            fi
+            ;;
+            
+        overlay|*)
+            log_msg "Setting up overlay mount"
+            # Create required directories for overlay
+            mkdir -p "$PERSISTENT_ROOT/overlay/$relpath" "$PERSISTENT_ROOT/work/$relpath"
+            
+            # Mount with overlay and fallback options
+            if mount -t overlay overlay \
+                -o "lowerdir=$mountpoint,upperdir=$PERSISTENT_ROOT/overlay/$relpath,workdir=$PERSISTENT_ROOT/work/$relpath,index=off,metacopy=off,xino=off" \
+                "$mountpoint"; then
+                log_msg "Successfully mounted as overlay"
+            else
+                log_msg "Overlay mount failed, trying bind mount from persistent"
+                
+                # Try bind mount from persistent if available
+                if [ -d "$PERSISTENT_ROOT/$relpath" ] || mkdir -p "$PERSISTENT_ROOT/$relpath"; then
+                    # Copy content if needed
+                    if [ -z "$(ls -A "$PERSISTENT_ROOT/$relpath" 2>/dev/null)" ]; then
+                        cp -aPR "$mountpoint"/. "$PERSISTENT_ROOT/$relpath/" 2>/dev/null
+                    fi
+                    
+                    if mount -o "bind$options" "$PERSISTENT_ROOT/$relpath" "$mountpoint"; then
+                        log_msg "Successfully mounted from persistent storage"
+                    else
+                        log_msg "Falling back to volatile bind mount"
+                        cp -aPR "$mountpoint"/. "$spec/" 2>/dev/null
+                        mount -o "bind$options" "$spec" "$mountpoint"
+                    fi
+                else
+                    log_msg "Using volatile bind mount"
+                    cp -aPR "$mountpoint"/. "$spec/" 2>/dev/null
+                    mount -o "bind$options" "$spec" "$mountpoint"
+                fi
+            fi
+            ;;
+    esac
+    
+    # Handle SELinux contexts
+    handle_selinux "$mountpoint"
+    
+elif [ -f "$mountpoint" ]; then
+    # Handle file mounting
+    log_msg "Mounting file: $mountpoint"
+    
+    # For files, we use a simpler approach - bind mount or persistent
+    if [ "$MOUNT_TYPE" = "persistent" ]; then
+        # Ensure parent directory exists
+        mkdir -p "$(dirname "$PERSISTENT_ROOT/$relpath")"
+        
+        # Copy file if it doesn't exist in persistent storage
+        if [ ! -f "$PERSISTENT_ROOT/$relpath" ]; then
+            cp -aP "$mountpoint" "$PERSISTENT_ROOT/$relpath" 2>/dev/null
+        fi
+        
+        # Bind mount from persistent storage
+        if mount -o "bind$options" "$PERSISTENT_ROOT/$relpath" "$mountpoint"; then
+            log_msg "Successfully mounted file from persistent storage"
+        else
+            log_msg "Failed to mount from persistent, using volatile"
+            if [ ! -f "$spec" ]; then
+                cp -aP "$mountpoint" "$spec" 2>/dev/null
+            fi
+            mount -o "bind$options" "$spec" "$mountpoint"
+        fi
+    else
+        # Regular bind mount for files
+        if [ ! -f "$spec" ]; then
+            cp -aP "$mountpoint" "$spec" 2>/dev/null
+        fi
+        mount -o "bind$options" "$spec" "$mountpoint"
+    fi
+    
+    handle_selinux "$mountpoint"
+fi
+
+log_msg "Mount completed for $mountpoint"
