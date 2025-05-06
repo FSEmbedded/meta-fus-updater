@@ -29,6 +29,7 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     auto-usb-update \
     2-stage-boot \
     rauc \
+    rauc-updater \
 "
 
 TOOLCHAIN_TARGET_TASK:append  = " kernel-devsrc"

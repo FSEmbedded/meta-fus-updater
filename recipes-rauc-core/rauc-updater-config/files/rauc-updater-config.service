@@ -1,0 +1,17 @@
+[Unit]
+Description=RAUC Configuration Update Service
+DefaultDependencies=no
+Before=rauc.service
+After=local-fs.target
+ConditionPathExists=/etc/fw_env.config
+ConditionPathExists=/etc/rauc/system.conf
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/rauc-updater-config.sh
+StandardOutput=journal
+StandardError=journal
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
