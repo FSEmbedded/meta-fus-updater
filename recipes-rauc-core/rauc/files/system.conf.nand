@@ -4,7 +4,7 @@ bootloader=uboot
 mountprefix=/mnt/rauc
 
 [keyring]
-path=rauc.cert.pem
+path=@@RAUC_KEYRING_PATH@@
 use-bundle-signing-time=true
 
 [slot.rootfs.0]
