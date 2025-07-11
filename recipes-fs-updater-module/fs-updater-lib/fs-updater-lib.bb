@@ -6,9 +6,9 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171d
 SUMMARY = "FS update Framework library"
 SECTION = "libs"
 
-inherit cmake
+inherit cmake pkgconfig
 
-SRCREV ?= "6ccd1ff23a01410f07a0d39464abf6eb66f3469f"
+SRCREV ?= "9ff626055f50f17d51ae008b45742b1620898861"
 FSUPLIB_SRC_URI ?= "git://github.com/FSEmbedded/fs-updater-lib.git"
 FSUPLIB_GIT_BRANCH ?= "master"
 
@@ -24,14 +24,11 @@ DEPENDS = " \
     botan \
     jsoncpp \
     zlib \
-    inicpp \
+    boost \
     libarchive \
+    pkgconfig-native \
     "
 
-RDEPENDS:${PN} = "\
-    libubootenv \
-    zlib \
-    botan \
-    libarchive \
-    "
-EXTRA_OECMAKE += "-DBOTAN2:STRING=${STAGING_DIR_TARGET}/usr/include/botan-2/"
+EXTRA_OECMAKE += "-Dupdate_version_type=string"
+# Ensure headers are in dev package
+FILES:${PN}-dev += "${includedir}/fs_update_framework/*"
