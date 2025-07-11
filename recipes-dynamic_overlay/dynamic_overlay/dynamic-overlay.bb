@@ -9,7 +9,7 @@ require includes/system_paths.inc
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 DESCRIPTION = "dynamic-overlay"
 
-SRCREV ?= "f674111618d4610d30b77b708a7b85ee996ff880"
+SRCREV ?= "3726bd302587c8d215dd1b398096df2d19d54cfa"
 DYNOL_SRC_URI ?= "git://github.com/FSEmbedded/dynamic-overlay.git"
 DYNOL_GIT_BRANCH ?= "master"
 
