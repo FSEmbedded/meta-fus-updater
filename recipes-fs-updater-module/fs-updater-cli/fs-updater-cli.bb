@@ -5,39 +5,34 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171d
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI = "\
-    file://src \
-    file://overlay.ini \
-    file://systemd-application-generator \
-    "
-
-inherit cmake
-
-SRCREV ?= "25ad75109dba46d54dc9e2a20c8001df827e712c"
+SRCREV ?= "fad55a20dcf9744a24d58bd0f3acee45cb6d616b"
 FSUPCLI_SRC_URI ?= "git://github.com/FSEmbedded/fs-updater-cli.git"
 FSUPCLI_GIT_BRANCH ?= "master"
 
 SRC_URI = " \
     ${FSUPCLI_SRC_URI};protocol=https;branch=${FSUPCLI_GIT_BRANCH} \
     file://fsup-framework-cli \
-    "
+"
 
 S = "${WORKDIR}/git"
 PV = "+git${SRCPV}"
+
+inherit cmake pkgconfig
 
 DEPENDS = " \
     libubootenv \
     botan \
     jsoncpp \
     zlib \
-    inicpp \
+    boost \
     fs-updater-lib \
     tclap \
     libarchive \
-    "
-# add bash-completion to use own
-# completion script
-DEPENDS +="bash-completion"
+    bash-completion \
+    pkgconfig-native \
+"
+
+EXTRA_OECMAKE += "-Dupdate_version_type=string"
 
 do_install:append() {
     # install bash completion script for fs-updater parameter
