@@ -28,6 +28,7 @@ class Config:
     HEADER_VERSION_BYTES = 4
     HEADER_CRC_BYTES = 4
     MKSQUASHFS_TIMEOUT = 300
+    UNSIGNED_IMAGE_POSTFIX = "_unsigned"
 
 
 class ImageSigner:
@@ -178,53 +179,68 @@ class ImageSigner:
         """Main method to create and sign image"""
         self.validate_inputs(args)
 
-        # Determine temp image path and prepare output
-        temp_img = args.output_image.with_suffix('.tmp')
-        in_place = args.sign_image and args.sign_image.resolve() == args.output_image.resolve()
+        # Generate image paths based on output pattern
+        base_path = args.output_image
+        base_name = base_path.stem
+        base_dir = base_path.parent
+        suffix = base_path.suffix
+
+        # Create unsigned squashfs image path with postfix
+        unsigned_img = base_dir / f"{base_name}{Config.UNSIGNED_IMAGE_POSTFIX}{suffix}"  # application_unsigned.squashfs
+
+        # Create signed image path (final output at -o parameter)
+        signed_img = base_path  # application.squashfs
+
+        in_place = args.sign_image and args.sign_image.resolve() == signed_img.resolve()
 
         if not in_place:
-            args.output_image.unlink(missing_ok=True)
+            signed_img.unlink(missing_ok=True)
 
-        # Build or sign
+        # Remove existing unsigned image
+        unsigned_img.unlink(missing_ok=True)
+
+        # Build or prepare unsigned image
         if args.root_folder:
             if not args.mksquashfs_path or not args.version:
                 raise ValueError("--mksquashfs-path and --version are required when creating a new image from --root-folder")
 
-            # Write version file
+            # Write version file and create unsigned SquashFS image
             self.write_version_file(args.root_folder, args.version)
-            self.create_squashfs(args.root_folder, temp_img, args.mksquashfs_path)
+            self.create_squashfs(args.root_folder, unsigned_img, args.mksquashfs_path)
+            self.logger.info(f"Unsigned SquashFS image created: {unsigned_img}")
         else:
             if not args.sign_image.exists():
                 raise ValueError(f"Input file '{args.sign_image}' not found")
-            temp_img = args.sign_image
+            # Copy existing image to unsigned_img if different paths
+            if args.sign_image.resolve() != unsigned_img.resolve():
+                import shutil
+                shutil.copy2(args.sign_image, unsigned_img)
+                self.logger.info(f"Input image copied to: {unsigned_img}")
 
         # Load private key
         private_key = self.load_private_key(args.key_file)
 
         # Compute header and signature
-        header, sig_block = self.compute_header_and_signature(temp_img, private_key)
+        header, sig_block = self.compute_header_and_signature(unsigned_img, private_key)
 
-        # Write signed image
+        # Write signed image (final output)
         try:
-            with args.output_image.open('wb') as out_f:
+            with signed_img.open('wb') as out_f:
                 out_f.write(header)
-                with temp_img.open('rb') as img_f:
+                with unsigned_img.open('rb') as img_f:
                     while chunk := img_f.read(self.chunk_size):
                         out_f.write(chunk)
                 out_f.write(sig_block)
 
-            self.logger.info(f"Signed image written to: {args.output_image}")
+            self.logger.info(f"Signed image written to: {signed_img}")
         except IOError as e:
             raise RuntimeError(f"Failed to write signed image: {e}")
 
-        # Append certificate chain
-        self.append_cert_chain(args.output_image, args.cert_file)
+        # Append certificate chain to signed image
+        self.append_cert_chain(signed_img, args.cert_file)
 
-        # Clean up temporary file
-        if args.root_folder and temp_img.exists():
-            temp_img.unlink(missing_ok=True)
-
-        self.logger.info(f"Signed image generated at: {args.output_image}")
+        self.logger.info(f"Unsigned SquashFS image: {unsigned_img}")
+        self.logger.info(f"Final signed image: {signed_img}")
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -237,17 +253,22 @@ def setup_logging(verbose: bool = False) -> None:
     )
 
 
+# Update argument parser description to reflect new behavior
 def create_argument_parser() -> argparse.ArgumentParser:
     """Create and configure argument parser"""
     parser = argparse.ArgumentParser(
-        description="Pack, sign, and optionally append certificate chain to an image.",
+        description="Pack, sign, and optionally append certificate chain to an image. "
+                   "Creates unsigned SquashFS image with _unsigned postfix and final signed image at -o path.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Create and sign new image from directory
+  # Create and sign new image from directory
+  # Creates: output_unsigned.img (SquashFS) and output.img (signed)
   %(prog)s -rf /path/to/root -o output.img -ptm /usr/bin/mksquashfs -kf key.pem -v 1.0.0
 
   # Sign existing image
+  # Creates: signed_unsigned.img (SquashFS copy) and signed.img (signed)
   %(prog)s -si existing.img -o signed.img -kf key.pem -cf cert.pem
         """
     )
@@ -260,7 +281,8 @@ Examples:
         help="Existing SquashFS file to sign only")
 
     parser.add_argument('-o', '--output-image', required=True, type=Path,
-        help="Destination path for the signed output image")
+        help="Final signed image output path. Unsigned SquashFS image will be created "
+             f"with '{Config.UNSIGNED_IMAGE_POSTFIX}' postfix")
     parser.add_argument('-ptm', '--mksquashfs-path', type=Path,
         help="Path to the mksquashfs binary (required when creating a new image)")
     parser.add_argument('-kf', '--key-file', required=True, type=Path,

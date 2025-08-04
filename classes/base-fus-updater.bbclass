@@ -14,6 +14,7 @@ FSUP_TEMPLATE_FILE_NAME ?= "fsupdate-template.json"
 # install host scripts for the build process
 DEPENDS = " \
     fus-installscript-native \
+    xxd-native \
 "
 
 remove_fw_env_config() {
@@ -96,7 +97,7 @@ do_create_application_image() {
         fi
     done
 
-    # Create the signed application image
+    # Create and sign application image
     bbnote "Creating signed application image version ${app_version}"
     "${STAGING_DIR_NATIVE}/usr/bin/package_app" \
         -o "${OUTPUT_IMAGE_BASE}" \
@@ -107,15 +108,18 @@ do_create_application_image() {
         -cf "${APP_CERT}" || bbfatal "Failed to create signed application image"
 
     # Validate created image
-    local APPLICATION_IMAGE="${OUTPUT_IMAGE_BASE}_img"
-    if [ ! -f "${APPLICATION_IMAGE}" ]; then
-        bbfatal "Application image creation failed: ${APPLICATION_IMAGE} not found"
+    if [ ! -f "${OUTPUT_IMAGE_BASE}" ]; then
+        bbfatal "Signed application image creation failed: ${OUTPUT_IMAGE_BASE} not found"
+    fi
+    # Validate created unsigned image
+    if [ ! -f "${OUTPUT_IMAGE_BASE}_unsigned" ]; then
+        bbfatal "Application image creation failed: ${OUTPUT_IMAGE_BASE}_unsigned not found"
     fi
 
     # Install into rootfs slots
     mkdir -p "${IMAGE_ROOTFS}/rw_fs/root/application"
     for slot in a b; do
-        cp -a "${APPLICATION_IMAGE}" "${IMAGE_ROOTFS}/rw_fs/root/application/app_${slot}.squashfs" \
+        cp -a "${OUTPUT_IMAGE_BASE}_unsigned" "${IMAGE_ROOTFS}/rw_fs/root/application/app_${slot}.squashfs" \
             || bbfatal "Failed to copy to app_${slot}.squashfs"
         chown root:root "${IMAGE_ROOTFS}/rw_fs/root/application/app_${slot}.squashfs"
         chmod 644 "${IMAGE_ROOTFS}/rw_fs/root/application/app_${slot}.squashfs"
@@ -165,7 +169,14 @@ do_create_squashfs_rootfs_images() {
         # Create system partition - nand|emmc
         ${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} \
             ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
-        ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.squashfs
+	if [ ! -f "${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs" ]; then
+            bbfatal "Rootfs squashfs creation failed: ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs not found"
+        fi
+        # create link in image deploy directory
+        cur_dir=$(pwd)
+        cd ${IMGDEPLOYDIR}
+        ln -sf ${IMAGE_NAME}.squashfs ${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.squashfs
+        cd "$cur_dir"
     fi
 }
 
@@ -294,8 +305,8 @@ python do_create_update_package() {
     else:
         bb.error(f"✗ RAUC binary missing: {rauc_binary}")
 
-    img_name = d.getVar('IMAGE_NAME')
-    d.setVar('RAUC_IMG_WIC', os.path.join(d.getVar('IMGDEPLOYDIR'), f"{img_name}.rootfs.wic"))
+    img_name = d.getVar('IMAGE_LINK_NAME')
+    d.setVar('RAUC_IMG_WIC', os.path.join(d.getVar('IMGDEPLOYDIR'), f"{img_name}.wic"))
     d.setVar('RAUC_IMG_ROOTFS', os.path.join(d.getVar('IMGDEPLOYDIR'), f"{img_name}.squashfs"))
     d.setVar('RAUC_IMG_KERNEL', os.path.join(d.getVar('DEPLOY_DIR_IMAGE'), 'Image'))
 
@@ -648,7 +659,7 @@ do_image_update_package[depends] += "mtd-utils-native:do_populate_sysroot"
 do_image_update_package[depends] += "squashfs-tools-native:do_populate_sysroot"
 do_image_update_package[depends] += "application-container-native:do_populate_sysroot"
 
-do_image_wic[recrdeptask] += "do_image_wic do_image_update_package"
+do_image_wic[recrdeptask] += "do_image_update_package"
 do_image_wic[depends] += "squashfs-tools-native:do_populate_sysroot"
 do_image_wic[depends] += "mtd-utils-native:do_populate_sysroot"
 do_image_wic[depends] += "python3-pyparted-native:do_populate_sysroot"
