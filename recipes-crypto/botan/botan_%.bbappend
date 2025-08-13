@@ -24,3 +24,8 @@ do_configure() {
 	${EXTRA_OECONF}
 }
 
+do_install() {
+	oe_runmake install
+	sed -i -e "s|${D}||g" ${D}${libdir}/pkgconfig/botan-2.pc
+}
+
