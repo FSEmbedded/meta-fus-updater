@@ -7,7 +7,7 @@ inherit base-fus-updater
 FSUP_WKS_FILE ??="fus-updater-sdcard.wks.in"
 
 python(){
-    supported_machines = ["fsimx8mm", "fsimx8mp"]
+    supported_machines = ["fsimx8mm", "fsimx8mp", "fsimx93"]
     if d.getVar('MACHINE') not in supported_machines:
         machine = d.getVar("MACHINE")
         bb.fatal(f"The {machine} is not supported/tested for meta-fus-updater layer")
