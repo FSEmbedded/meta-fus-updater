@@ -21,8 +21,8 @@ S = "${WORKDIR}/git"
 PV = "+git${SRCPV}"
 
 FILES:${PN} = " \
-	/sbin/ \
-	/sbin/preinit \
+	${sbindir}/preinit \
+	${sbindir}/dynamic_overlay \
 	/ramdisk_hw_conf \
 "
 
@@ -41,7 +41,7 @@ RDEPENDS:${PN} += "\
 "
 
 # Set extra C-Make variables.
-EXTRA_OECMAKE += " -DCMAKE_INSTALL_SBINDIR=/sbin"
+EXTRA_OECMAKE += " -DCMAKE_INSTALL_SBINDIR=${sbindir}"
 EXTRA_OECMAKE += " -DRAUC_SYSTEM_CONF_PATH=${RAUC_SYSTEM_CONF_PATH}"
 EXTRA_OECMAKE += " -DNAND_RAUC_SYSTEM_CONF_PATH=${NAND_RAUC_SYSTEM_CONF_PATH}"
 EXTRA_OECMAKE += " -DEMMC_RAUC_SYSTEM_CONF_PATH=${EMMC_RAUC_SYSTEM_CONF_PATH}"
