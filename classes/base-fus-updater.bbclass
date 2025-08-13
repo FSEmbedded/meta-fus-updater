@@ -91,7 +91,7 @@ do_create_application_image() {
     # Define output base and validate tools
     local OUTPUT_IMAGE_BASE="${DEPLOY_DIR_IMAGE}/${APPLICATION_CONTAINER_NAME}"
     local app_version="${APPLICATION_VERSION}"
-    for tool in "${STAGING_DIR_NATIVE}/usr/bin/package_app" "${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs"; do
+    for tool in "${STAGING_DIR_NATIVE}/usr/bin/package_app" "${STAGING_DIR_NATIVE}/usr/bin/mksquashfs"; do
         if [ ! -x "${tool}" ]; then
             bbfatal "Required tool not found or not executable: ${tool}"
         fi
@@ -102,7 +102,7 @@ do_create_application_image() {
     "${STAGING_DIR_NATIVE}/usr/bin/package_app" \
         -o "${OUTPUT_IMAGE_BASE}" \
         -rf "${IMAGE_APP_FUS_UPDATER}" \
-        -ptm "${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs" \
+        -ptm "${STAGING_DIR_NATIVE}/usr/bin/mksquashfs" \
         -v "${app_version}" \
         -kf "${APP_KEY}" \
         -cf "${APP_CERT}" || bbfatal "Failed to create signed application image"
@@ -167,9 +167,9 @@ do_create_squashfs_rootfs_images() {
     # create fsupdate images for emmc boot device
     if [[ "${IMAGE_FSTYPES}" =~ wic.gz|wic ]]; then
         # Create system partition - nand|emmc
-        ${STAGING_DIR_NATIVE}/usr/sbin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} \
+        ${STAGING_DIR_NATIVE}/usr/bin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} \
             ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
-	if [ ! -f "${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs" ]; then
+        if [ ! -f "${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs" ]; then
             bbfatal "Rootfs squashfs creation failed: ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs not found"
         fi
         # create link in image deploy directory
