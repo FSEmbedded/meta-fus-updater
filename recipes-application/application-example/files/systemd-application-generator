@@ -1,4 +1,6 @@
 #!/bin/sh
-serviceName=start_application.service
-# enable application start
-ln -sf  /lib/systemd/system/$serviceName /etc/systemd/system/multi-user.target.wants/$serviceName
+SERVICE_NAME="start_application.service"
+TARGET_DIR="${3}/etc/systemd/system/multi-user.target.wants"
+
+mkdir -p "$TARGET_DIR" || exit 1
+ln -sf "/usr/lib/systemd/system/$SERVICE_NAME" "$TARGET_DIR/$SERVICE_NAME" || exit 1
