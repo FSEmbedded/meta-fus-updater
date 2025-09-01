@@ -119,33 +119,49 @@ if [ -d "$mountpoint" ]; then
             log_msg "Setting up overlay mount"
             # Create required directories for overlay
             mkdir -p "$PERSISTENT_ROOT/overlay/$relpath" "$PERSISTENT_ROOT/work/$relpath"
-            
-            # Mount with overlay and fallback options
+
+            # Copy original content to spec if not already done
+            if [ -z "$(ls -A "$spec" 2>/dev/null)" ] && [ -n "$(ls -A "$mountpoint" 2>/dev/null)" ]; then
+                log_msg "Copying original content to spec directory"
+                cp -aPR "$mountpoint"/. "$spec/" 2>/dev/null
+            fi
+
+            log_msg "Attempting overlay mount with lowerdir=$mountpoint:$spec"
+            log_msg "upperdir=$PERSISTENT_ROOT/overlay/$relpath"
+            log_msg "workdir=$PERSISTENT_ROOT/work/$relpath"
+
+            # Mount with overlay - use both mountpoint and spec as lowerdirs
             if mount -t overlay overlay \
-                -o "lowerdir=$mountpoint,upperdir=$PERSISTENT_ROOT/overlay/$relpath,workdir=$PERSISTENT_ROOT/work/$relpath,index=off,metacopy=off,xino=off" \
+                -o "lowerdir=$mountpoint:$spec,upperdir=$PERSISTENT_ROOT/overlay/$relpath,workdir=$PERSISTENT_ROOT/work/$relpath,index=off,metacopy=off,xino=off" \
                 "$mountpoint"; then
                 log_msg "Successfully mounted as overlay"
             else
-                log_msg "Overlay mount failed, trying bind mount from persistent"
-                
-                # Try bind mount from persistent if available
-                if [ -d "$PERSISTENT_ROOT/$relpath" ] || mkdir -p "$PERSISTENT_ROOT/$relpath"; then
-                    # Copy content if needed
-                    if [ -z "$(ls -A "$PERSISTENT_ROOT/$relpath" 2>/dev/null)" ]; then
-                        cp -aPR "$mountpoint"/. "$PERSISTENT_ROOT/$relpath/" 2>/dev/null
-                    fi
+                log_msg "Overlay mount failed, trying with reduced feature set"
+                # Try with minimal options for compatibility
+                if mount -t overlay overlay \
+                    -o "lowerdir=$mountpoint:$spec,upperdir=$PERSISTENT_ROOT/overlay/$relpath,workdir=$PERSISTENT_ROOT/work/$relpath" \
+                    "$mountpoint"; then
+                    log_msg "Successfully mounted overlay with basic options"
+                else
+                    log_msg "Overlay mount failed completely, trying bind mount from persistent"
                     
-                    if mount -o "bind$options" "$PERSISTENT_ROOT/$relpath" "$mountpoint"; then
-                        log_msg "Successfully mounted from persistent storage"
+                    # Try bind mount from persistent if available
+                    if [ -d "$PERSISTENT_ROOT/$relpath" ] || mkdir -p "$PERSISTENT_ROOT/$relpath"; then
+                        # Copy content if needed
+                        if [ -z "$(ls -A "$PERSISTENT_ROOT/$relpath" 2>/dev/null)" ]; then
+                            cp -aPR "$mountpoint"/. "$PERSISTENT_ROOT/$relpath/" 2>/dev/null
+                        fi
+
+                        if mount -o "bind$options" "$PERSISTENT_ROOT/$relpath" "$mountpoint"; then
+                            log_msg "Successfully mounted from persistent storage"
+                        else
+                            log_msg "Falling back to volatile bind mount"
+                            mount -o "bind$options" "$spec" "$mountpoint"
+                        fi
                     else
-                        log_msg "Falling back to volatile bind mount"
-                        cp -aPR "$mountpoint"/. "$spec/" 2>/dev/null
+                        log_msg "Using volatile bind mount"
                         mount -o "bind$options" "$spec" "$mountpoint"
                     fi
-                else
-                    log_msg "Using volatile bind mount"
-                    cp -aPR "$mountpoint"/. "$spec/" 2>/dev/null
-                    mount -o "bind$options" "$spec" "$mountpoint"
                 fi
             fi
             ;;
