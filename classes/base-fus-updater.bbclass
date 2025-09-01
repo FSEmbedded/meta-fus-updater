@@ -1,15 +1,6 @@
 # F&S base functions to create update images
 
-# enviroments to create application image
-APPLICATION_VERSION ?="20241019"
-APPLICATION_CONTAINER_NAME ?= "application_container"
-# enviroments to create firmware image
-FIRMWARE_VERSION ?= "20241019"
-
-FS_PROVISIONING_SERVICE_DIR_NAME ?="fs-provisioning"
-
-FSUP_IMAGE_DIR_NAME ?="fsup-framework-bin"
-FSUP_TEMPLATE_FILE_NAME ?= "fsupdate-template.json"
+inherit fus-updater-defaults
 
 # install host scripts for the build process
 DEPENDS = " \
@@ -168,7 +159,8 @@ do_create_squashfs_rootfs_images() {
     if [[ "${IMAGE_FSTYPES}" =~ wic.gz|wic ]]; then
         # Create system partition - nand|emmc
         ${STAGING_DIR_NATIVE}/usr/bin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} \
-            ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs ${EXTRA_IMAGECMD} -noappend -comp xz
+            ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs -noappend ${SQUASHFS_EXTRA_IMAGECMD}
+
         if [ ! -f "${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs" ]; then
             bbfatal "Rootfs squashfs creation failed: ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs not found"
         fi
@@ -524,6 +516,8 @@ create_fsupdate () {
         bbwarn "value common for first or second argument is not allowed."
         return 0
     fi
+    # remove work dir if available
+    rm -rf ${fsup_images_work_dir}
 
     args="$1 $2"
 
@@ -558,7 +552,7 @@ create_fsupdate () {
         # create update
         cp -f ${DEPLOY_DIR_IMAGE}/${UPDATE_FILE_NAME} ${fsup_images_work_dir}/${target}
         # calculate sha256 sum
-        update_sha256sum=$(sha256sum ${fsup_images_work_dir}/${target} | cut -f1 -d' ')
+        update_sha256sum=$(sha256sum -- "${fsup_images_work_dir}/${target}" | awk '{print $1}')
 
         if [ ! -f "${update_desc_file}" ]; then
             # copy fsupdate-template.json
@@ -577,9 +571,9 @@ create_fsupdate () {
         sed -i "$remove_block" ${fsup_images_work_dir}/fsupdate.json
 
         cd ${fsup_images_work_dir}
-        tar cfvj ${target_archiv_name}.tar.bz2 fsupdate.json $target
+        ${FAKEROOTCMD} tar cfvj ${target_archiv_name}.tar.bz2 --numeric-owner fsupdate.json $target
         # use addfsheader script from native package
-        addfsheader.sh -t CERT ${fsup_images_work_dir}/${target_archiv_name}.tar.bz2 > \
+        ${FAKEROOTCMD} addfsheader.sh -t CERT ${fsup_images_work_dir}/${target_archiv_name}.tar.bz2 > \
             ${fsup_images_dir}/${target_archiv_name}.fs
         rm -f ${fsup_images_work_dir}/fsupdate.json
     done
@@ -588,9 +582,9 @@ create_fsupdate () {
         # check param 3 for combinded update
         cp -f ${update_desc_file} ${fsup_images_work_dir}/fsupdate.json
         cd ${fsup_images_work_dir}
-        tar cfvj update_${4}.tar.bz2 fsupdate.json update.app update.fw
+        ${FAKEROOTCMD} tar cfvj update_${4}.tar.bz2 --numeric-owner fsupdate.json update.app update.fw
         # use addfsheader script from native package
-        addfsheader.sh -t CERT ${fsup_images_work_dir}/update_${4}.tar.bz2 > \
+        ${FAKEROOTCMD} addfsheader.sh -t CERT ${fsup_images_work_dir}/update_${4}.tar.bz2 > \
             ${fsup_images_dir}/update_${4}.fs
     fi
 
@@ -664,7 +658,7 @@ do_image_wic[depends] += "squashfs-tools-native:do_populate_sysroot"
 do_image_wic[depends] += "mtd-utils-native:do_populate_sysroot"
 do_image_wic[depends] += "python3-pyparted-native:do_populate_sysroot"
 
-ROOTFS_POSTPROCESS_COMMAND += "remove_fw_env_config; "
+ROOTFS_POSTPROCESS_COMMAND:append = "remove_fw_env_config; "
 
 do_fsup_image_clean () {
     # remove fsupdate directory with all images
