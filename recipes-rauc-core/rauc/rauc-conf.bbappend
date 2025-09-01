@@ -1,5 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
+inherit fus-updater-defaults
 # includes the PATH_TO_SYSTEM_CONF* variables
 require includes/system_paths.inc
 
@@ -13,10 +14,6 @@ SRC_URI = " \
 
 CERT_PURPOSE = "system"
 inherit cert-handler
-
-# This is currently not used by FS-Update, but the additional adu-agent
-# for cloud updates uses this to determine if an update has already been installed.
-FIRMWARE_VERSION ?= "20211012"
 
 python () {
     if d.getVar("FIRMWARE_VERSION") == None:
