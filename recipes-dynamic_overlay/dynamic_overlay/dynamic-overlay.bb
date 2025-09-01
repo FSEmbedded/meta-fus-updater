@@ -9,7 +9,7 @@ require includes/system_paths.inc
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 DESCRIPTION = "dynamic-overlay"
 
-SRCREV ?= "3726bd302587c8d215dd1b398096df2d19d54cfa"
+SRCREV ?= "b274098e08bd3a29a29a6252eb14175234f07045"
 DYNOL_SRC_URI ?= "git://github.com/FSEmbedded/dynamic-overlay.git"
 DYNOL_GIT_BRANCH ?= "master"
 
@@ -57,6 +57,8 @@ EXTRA_OECMAKE += " -DEMMC_UBOOT_ENV_PATH=${EMMC_UBOOT_ENV_PATH}"
 # add other data partition name
 # must be same name in layout of update divice
 # EXTRA_OECMAKE += " -DPERSISTMEMORY_DEVICE_NAME="data""
+
+EXTRA_OECMAKE += " -DBUILD_X509_CERIFICATE_STORE_MOUNT=OFF"
 
 # set the define to the block number of the secure partition
 # dynamic overlay uses raw read to get keys and
