@@ -7,7 +7,7 @@ The layer **meta-fus-updater** is a main component of **FSUP-Framework** integra
 | Architecure | Boot Device | Version | State    |
 |-------------|-------------|---------|----------|
 | fsimx8mp    | eMMC        | >=fsimx8mp-2024.11      | &#10003; |
-| fsimx93     |             |         |in work  |
+| fsimx93     |             | >=fsimx93-2025.08        | &#10003; |
 | fsimx8mm    |             | |&#10007; |
 
 
@@ -23,7 +23,7 @@ Change into cloned directory and checkout needed release.
 
 ```shell
 cd releases-fus
-git checkout fsimx8mp-2024.11
+git checkout fsimx93-2025.08
 ```
 
 Run ***setup-yocto*** shell script to download available layers.
