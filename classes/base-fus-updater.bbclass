@@ -6,6 +6,7 @@ inherit fus-updater-defaults
 DEPENDS = " \
     fus-installscript-native \
     xxd-native \
+    openssl-native \
 "
 
 remove_fw_env_config() {
@@ -152,12 +153,20 @@ do_create_squashfs_rootfs_images() {
         # Create data partition - nand
         ${STAGING_DIR_NATIVE}/usr/sbin/mkfs.ubifs -r ${IMAGE_DATA_PARTITION_FUS_UPDATER} \
             -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
-        ln -sf ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.data-partition-nand.ubifs
+
+        if [ ! -f "${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs" ]; then
+            bbfatal "Rootfs squashfs creation failed: ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs not found"
+        fi
+
+        cur_dir=$(pwd)
+        cd ${IMGDEPLOYDIR}
+        ln -sf ${IMAGE_NAME}.data-partition-nand.ubifs ${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.data-partition-nand.ubifs
+        cd "$cur_dir"
     fi
 
     # create fsupdate images for emmc boot device
     if [[ "${IMAGE_FSTYPES}" =~ wic.gz|wic ]]; then
-        # Create system partition - nand|emmc
+        # Create system partition - emmc
         ${STAGING_DIR_NATIVE}/usr/bin/mksquashfs ${IMAGE_ROOTFS_FUS_UPDATER} \
             ${IMGDEPLOYDIR}/${IMAGE_NAME}.squashfs -noappend ${SQUASHFS_EXTRA_IMAGECMD}
 
@@ -300,7 +309,8 @@ python do_create_update_package() {
     img_name = d.getVar('IMAGE_LINK_NAME')
     d.setVar('RAUC_IMG_WIC', os.path.join(d.getVar('IMGDEPLOYDIR'), f"{img_name}.wic"))
     d.setVar('RAUC_IMG_ROOTFS', os.path.join(d.getVar('IMGDEPLOYDIR'), f"{img_name}.squashfs"))
-    d.setVar('RAUC_IMG_KERNEL', os.path.join(d.getVar('DEPLOY_DIR_IMAGE'), 'Image'))
+    img_name=d.getVar('KERNEL_IMAGE_NAME')
+    d.setVar('RAUC_IMG_KERNEL', os.path.join(d.getVar('DEPLOY_DIR_IMAGE'), f"{img_name}"))
 
     dtb_file = d.getVar('KERNEL_DEVICETREE').split()[0].split('/')[-1]
     d.setVar('RAUC_IMG_DEVICE_TREE', os.path.join(d.getVar('DEPLOY_DIR_IMAGE'), dtb_file))
@@ -443,58 +453,73 @@ def create_rauc_update_nand(d):
     import os, shutil, pathlib, subprocess as sp, bb
 
     # Ensure variables are defined
-    for var in ('RAUC_BINARY','RAUC_CERT','RAUC_KEY','RAUC_TEMPLATE_NAND','RAUC_IMG_ROOTFS','RAUC_IMG_DEVICE_TREE','RAUC_IMG_KERNEL','KERNEL_DEVICETREE'):
+    required_vars = ['RAUC_BINARY', 'RAUC_CERT', 'RAUC_KEY', 'RAUC_TEMPLATE_NAND',
+                     'RAUC_IMG_ROOTFS', 'RAUC_IMG_DEVICE_TREE', 'RAUC_IMG_KERNEL',
+                     'KERNEL_DEVICETREE']
+    for var in required_vars:
         if not d.getVar(var):
             bb.fatal(f"Variable {var} is not defined")
 
     path_to_rauc = d.getVar('RAUC_BINARY')
     path_to_cert = d.getVar('RAUC_CERT')
     path_to_key = d.getVar('RAUC_KEY')
+    inter_cert = d.getVar('RAUC_INTERMEDIATE_CERT') or None
     template = d.getVar('RAUC_TEMPLATE_NAND')
     rootfs = d.getVar('RAUC_IMG_ROOTFS')
     dtb = d.getVar('RAUC_IMG_DEVICE_TREE')
     kernel = d.getVar('RAUC_IMG_KERNEL')
     deploy = d.getVar('DEPLOY_DIR_IMAGE')
 
+    # Verify input files exist
     for path, label in [(rootfs, "rootfs"), (dtb, "device tree"), (kernel, "kernel"), (template, "template dir")]:
         if not os.path.exists(path):
             bb.fatal(f"{label} file not found at: {path}")
 
-    out = os.path.join(deploy,'rauc_update_nand')
+    out = os.path.join(deploy, 'rauc_update_nand')
     shutil.rmtree(out, ignore_errors=True)
     pathlib.Path(out).mkdir(parents=True)
 
     # Copy template
-    res = sp.run(['cp','-r',f"{template}/.",out],capture_output=True)
-    if res.returncode:
+    res = sp.run(['cp', '-r', f"{template}/.", out], capture_output=True)
+    if res.returncode != 0:
         bb.fatal(f"Template NAND copy failed:\n{res.stderr.decode().strip()}")
 
     # Copy images
-    shutil.copyfile(rootfs, os.path.join(out,'rootfs.squashfs'))
+    shutil.copyfile(rootfs, os.path.join(out, 'rootfs.squashfs'))
     dtb_base = os.path.basename(d.getVar('KERNEL_DEVICETREE').split()[0])
-    shutil.copyfile(dtb, os.path.join(out,dtb_base))
-    shutil.copyfile(kernel, os.path.join(out,'Image.img'))
+    shutil.copyfile(dtb, os.path.join(out, dtb_base))
+    shutil.copyfile(kernel, os.path.join(out, 'Image.img'))
 
-    # Replace placeholders
+    # Replace placeholders in template files
     for fname in ('install-check', 'manifest.raucm'):
-        fpath = os.path.join(outdir, fname)
+        fpath = os.path.join(out, fname)
         if not os.path.exists(fpath):
             bb.warn(f"{fname} missing in template, skipping placeholder replacement")
             continue
         with open(fpath, 'r+') as f:
-            content = f.read().replace('${fdt_img}', dtb_filename)
+            content = f.read().replace('${fdt_img}', dtb_base)
             f.seek(0)
             f.write(content)
             f.truncate()
 
-    artifact = os.path.join(deploy,'rauc_update_nand.artifact')
+    artifact = os.path.join(deploy, 'rauc_update_nand.artifact')
+
     # Remove existing artifact file, if present
     if os.path.isfile(artifact):
         os.remove(artifact)
-    cmd = [path_to_rauc,'bundle','--key',path_to_key,'--cert',path_to_cert,out,artifact]
+
+    # Build RAUC bundle command (with intermediate cert support like eMMC)
+    cmd = [path_to_rauc, 'bundle', '--key', path_to_key, '--cert', path_to_cert]
+    if inter_cert:
+        cmd.extend(['--intermediate', inter_cert])
+    cmd.extend([out, artifact])
+
+    bb.note(f"Running RAUC bundle command: {' '.join(cmd)}")  # Added: debug output
+
     r = sp.run(cmd, capture_output=True)
-    if r.returncode:
+    if r.returncode != 0:
         bb.fatal(f"RAUC bundle NAND failed: {r.stderr.decode().strip()}")
+
     shutil.rmtree(out)
 
 
@@ -652,6 +677,8 @@ IMAGE_POSTPROCESS_COMMAND += "create_update_images; "
 do_image_update_package[depends] += "mtd-utils-native:do_populate_sysroot"
 do_image_update_package[depends] += "squashfs-tools-native:do_populate_sysroot"
 do_image_update_package[depends] += "application-container-native:do_populate_sysroot"
+
+do_create_update_package[depends] += "openssl-native:do_populate_sysroot"
 
 do_image_wic[recrdeptask] += "do_image_update_package"
 do_image_wic[depends] += "squashfs-tools-native:do_populate_sysroot"
