@@ -6,16 +6,8 @@ inherit base-fus-updater
 
 FSUP_WKS_FILE ??="fus-updater-sdcard.wks.in"
 
-python(){
-    supported_machines = ["fsimx8mm", "fsimx8mp", "fsimx93"]
-    if d.getVar('MACHINE') not in supported_machines:
-        machine = d.getVar("MACHINE")
-        bb.fatal(f"The {machine} is not supported/tested for meta-fus-updater layer")
-    else:
-        wksfile = d.getVar("FSUP_WKS_FILE")
-        d.setVar("WKS_FILE", wksfile)
-        d.setVar("IMAGE_FSTYPES", "wic update_package")
-}
+WKS_FILE = "${FSUP_WKS_FILE}"
+IMAGE_FSTYPES:append = " wic update_package"
 
 addtask do_create_update_package after do_image_wic before do_image_complete
 
