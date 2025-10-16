@@ -1,14 +1,30 @@
 #!/bin/sh
 
+CHECKSUM_BS="${RAUC_CHECKSUM_BS:-4M}"
+
 checksum()
 {
-    BS=4194304 # 4Mb
-    dd bs=${BS} count=1 if="$1" | sha256sum | awk '{ print $1 }'
+    # Process in CHECKSUM_BS chunks - keeps RAM usage minimal
+    dd if="$1" bs="${CHECKSUM_BS}" status=none 2>/dev/null | sha256sum | awk '{ print $1 }'
+}
+
+# For NAND: checksum only the written data (SIZE bytes)
+checksum_device()
+{
+    local device="$1"
+    local size="$2"
+
+    dd if="${device}" bs="${CHECKSUM_BS}" iflag=count_bytes count="${size}" status=none 2>/dev/null | sha256sum | awk '{ print $1 }'
 }
 
 case "$1" in
     slot-post-install)
         env > /tmp/log
+
+        # Log configured block size
+        echo "Using block size: ${CHECKSUM_BS}" >> /tmp/log
+
+        # Determine correct image name based on slot
         if [ "${RAUC_SLOT_NAME}" = "rootfs.1" ] || [ "${RAUC_SLOT_NAME}" = "rootfs.0" ]; then
             export RAUC_IMAGE_NAME="rootfs.squashfs"
         elif [ "${RAUC_SLOT_NAME}" = "boot.1" ] || [ "${RAUC_SLOT_NAME}" = "boot.0" ]; then
@@ -16,20 +32,35 @@ case "$1" in
         elif [ "${RAUC_SLOT_NAME}" = "fdt.0" ] || [ "${RAUC_SLOT_NAME}" = "fdt.1" ]; then
             export RAUC_IMAGE_NAME="${fdt_img}"
         fi
+
+        # Build full path to image
         export RAUC_IMAGE_NAME="${RAUC_BUNDLE_MOUNT_POINT}/${RAUC_IMAGE_NAME}"
+
+        # Get image size
         export SIZE=""
-        SIZE=$(wc -c < "${RAUC_IMAGE_NAME}")
+        SIZE=$(stat -c '%s' "${RAUC_IMAGE_NAME}")
+
+        # Calculate checksum of source image (streaming, low RAM)
         export RAUC_IMAGE_DIGEST=""
         RAUC_IMAGE_DIGEST=$(checksum "${RAUC_IMAGE_NAME}")
+
+        # Clear caches - critical for NAND to force re-read from device
         sync && echo 3 > /proc/sys/vm/drop_caches
-        RAUC_SLOT_DIGEST=$(checksum "${RAUC_SLOT_DEVICE}")
+
+        # Calculate checksum of written slot device (streaming, low RAM)
+        export RAUC_SLOT_DIGEST=""
+        RAUC_SLOT_DIGEST=$(checksum_device "${RAUC_SLOT_DEVICE}" "${SIZE}")
+
+        # Compare checksums
         if [ "${RAUC_SLOT_DIGEST}" != "${RAUC_IMAGE_DIGEST}" ]; then
             {
-                echo "${RAUC_SLOT_DEVICE}"
-                echo "${SIZE}"
-                echo "${RAUC_IMAGE_NAME}"
-                echo "${RAUC_SLOT_DIGEST}"
-                echo "${RAUC_IMAGE_DIGEST} -"
+                echo "Checksum verification failed!"
+                echo "Block Size: ${CHECKSUM_BS}"
+                echo "Slot Device: ${RAUC_SLOT_DEVICE}"
+                echo "Image Size: ${SIZE} bytes"
+                echo "Image Name: ${RAUC_IMAGE_NAME}"
+                echo "Slot Digest: ${RAUC_SLOT_DIGEST}"
+                echo "Image Digest: ${RAUC_IMAGE_DIGEST}"
             } >> /tmp/log
             exit 100
         fi
