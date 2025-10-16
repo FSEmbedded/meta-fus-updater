@@ -5,6 +5,7 @@ mountprefix=/mnt/rauc
 
 [keyring]
 path=@@RAUC_KEYRING_PATH@@
+check-purpose=codesign
 use-bundle-signing-time=true
 
 [slot.rootfs.0]
