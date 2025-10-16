@@ -486,9 +486,12 @@ def create_rauc_update_nand(d):
 
     # Copy images
     shutil.copyfile(rootfs, os.path.join(out, 'rootfs.squashfs'))
-    dtb_base = os.path.basename(d.getVar('KERNEL_DEVICETREE').split()[0])
-    shutil.copyfile(dtb, os.path.join(out, dtb_base))
     shutil.copyfile(kernel, os.path.join(out, 'Image.img'))
+
+    dtb_path = d.getVar('KERNEL_DEVICETREE').split()[0]
+    dtb_filename = os.path.basename(dtb_path).replace('.dtb', '.img')
+
+    shutil.copyfile(dtb, os.path.join(out, dtb_filename))
 
     # Replace placeholders in template files
     for fname in ('install-check', 'manifest.raucm'):
@@ -497,7 +500,7 @@ def create_rauc_update_nand(d):
             bb.warn(f"{fname} missing in template, skipping placeholder replacement")
             continue
         with open(fpath, 'r+') as f:
-            content = f.read().replace('${fdt_img}', dtb_base)
+            content = f.read().replace('${fdt_img}', dtb_filename)
             f.seek(0)
             f.write(content)
             f.truncate()
