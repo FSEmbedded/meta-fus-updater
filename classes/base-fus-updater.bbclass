@@ -73,11 +73,11 @@ do_create_application_image() {
     rm -rf "${IMAGE_APP_FUS_UPDATER}" && mkdir -p "${IMAGE_APP_FUS_UPDATER}"
 
     # Copy application files
-    if [ -d "${DEPLOY_DIR_IMAGE}/app" ]; then
-        cp -a "${DEPLOY_DIR_IMAGE}/app/"* "${IMAGE_APP_FUS_UPDATER}/"
-        bbnote "Copied application files from ${DEPLOY_DIR_IMAGE}/app"
+    if [ -d "${APPLICATION_DEPLOY_DIR}" ]; then
+        cp -a "${APPLICATION_DEPLOY_DIR}/"* "${IMAGE_APP_FUS_UPDATER}/"
+        bbnote "Copied application files from ${APPLICATION_DEPLOY_DIR}"
     else
-        bbwarn "No application files found in ${DEPLOY_DIR_IMAGE}/app"
+        bbwarn "No application files found in ${APPLICATION_DEPLOY_DIR}"
     fi
 
     # Define output base and validate tools
@@ -118,9 +118,6 @@ do_create_application_image() {
     done
 
     # Sync to data partition and finalize
-    mkdir -p "${IMAGE_DATA_PARTITION_FUS_UPDATER}"
-    cp -a "${IMAGE_ROOTFS}/rw_fs/root" "${IMAGE_DATA_PARTITION_FUS_UPDATER}/" \
-        || bbfatal "Failed to sync root to data partition"
     mkdir -p "${IMAGE_ROOTFS}/adu"
 
     bbnote "Application image creation completed successfully"

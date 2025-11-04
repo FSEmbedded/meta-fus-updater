@@ -3,6 +3,7 @@
 # enviroments to create application image
 APPLICATION_VERSION ?="20241019"
 APPLICATION_CONTAINER_NAME ?= "application_container"
+APPLICATION_DEPLOY_DIR ?= "${DEPLOY_DIR_IMAGE}/app"
 # enviroments to create firmware image
 FIRMWARE_VERSION ?= "20241019"
 
