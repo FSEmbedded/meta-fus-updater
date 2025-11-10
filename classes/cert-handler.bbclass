@@ -8,6 +8,8 @@ CERT_BASE_DIR           ??= "${META_FUS_LAYER_BASE}/certs"
 # Ensure openssl-native is available in sysroot before running the task
 do_generate_certificates[depends] += "openssl-native:do_populate_sysroot"
 
+do_generate_certificates[nostamp] = "1"
+
 # Task to generate or validate the certificate infrastructure
 python do_generate_certificates() {
     import os
