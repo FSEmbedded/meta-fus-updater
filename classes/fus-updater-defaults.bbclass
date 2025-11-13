@@ -24,6 +24,3 @@ FUS_BUILD_VARIANT ?= "dev"
 # 1 use Intermediate to create sign certificate
 # 0 use root to create sign certificate
 FUS_USE_INTERMEDIATE_CERT ?= "1"
-
-# enviroment
-KERNEL_IMAGE_NAME ?= "zImage"

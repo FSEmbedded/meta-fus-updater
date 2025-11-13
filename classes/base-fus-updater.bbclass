@@ -306,7 +306,7 @@ python do_create_update_package() {
     img_name = d.getVar('IMAGE_LINK_NAME')
     d.setVar('RAUC_IMG_WIC', os.path.join(d.getVar('IMGDEPLOYDIR'), f"{img_name}.wic"))
     d.setVar('RAUC_IMG_ROOTFS', os.path.join(d.getVar('IMGDEPLOYDIR'), f"{img_name}.squashfs"))
-    img_name=d.getVar('KERNEL_IMAGE_NAME')
+    img_name=d.getVar('KERNEL_IMAGETYPE')
     d.setVar('RAUC_IMG_KERNEL', os.path.join(d.getVar('DEPLOY_DIR_IMAGE'), f"{img_name}"))
 
     dtb_file = d.getVar('KERNEL_DEVICETREE').split()[0].split('/')[-1]
