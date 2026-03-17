@@ -1,4 +1,0 @@
-# eMMC device name      device offset   Env. size
-/dev/mmcblk0boot0       0x003cc800      0x0004000
-/dev/mmcblk0boot1       0x003cc800      0x0004000
-

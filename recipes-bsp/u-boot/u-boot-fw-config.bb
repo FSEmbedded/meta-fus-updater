@@ -7,21 +7,52 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 # includes the PATH_TO_FW_ENV_CONF* variables
 require includes/system_paths.inc
+# include offsets
+require fw_env_offsets.inc
 
 SRC_URI += "\
-    file://fw_env.config.mmc \
-    file://fw_env.config.nand \
+    file://fw_env.config.in \
     "
 
-S = "${WORKDIR}"
 RDEPENDS:${PN} = "libubootenv"
 
-do_install () {
+# default devices
+UBOOT_FW_ENV_MMC_DEV ?= "/dev/mmcblk0boot0"
+UBOOT_FW_ENV_MMC_REDUNDANT_DEV ?= "/dev/mmcblk0boot1"
+UBOOT_FW_ENV_NAND_DEV ?= "/dev/mtd0"
+UBOOT_FW_ENV_NAND_REDUNDANT_DEV ?= "/dev/mtd0"
+
+do_install() {
+
     install -d ${D}${sysconfdir}
-    if [ -e ${WORKDIR}/fw_env.config.nand ] ; then
-        install -m 0644 ${S}/fw_env.config.nand ${D}${NAND_UBOOT_ENV_PATH}
-    fi
-    if [ -e ${WORKDIR}/fw_env.config.mmc ] ; then
-        install -m 0644 ${S}/fw_env.config.mmc ${D}${EMMC_UBOOT_ENV_PATH}
-    fi
+
+    #
+    # generate MMC config
+    #
+    sed \
+        -e "s|@@DEV@@|${UBOOT_FW_ENV_MMC_DEV}|g" \
+        -e "s|@@DEV_RED@@|${UBOOT_FW_ENV_MMC_REDUNDANT_DEV}|g" \
+        -e "s|@@ENV_START@@|${UBOOT_FW_ENV_MMC_START}|g" \
+        -e "s|@@ENV_SIZE@@|${UBOOT_FW_ENV_MMC_SIZE}|g" \
+        -e "s|@@ENV_RED_START@@|${UBOOT_FW_ENV_MMC_REDUNDANT_START}|g" \
+        -e "s|@@ENV_RED_SIZE@@|${UBOOT_FW_ENV_MMC_REDUNDANT_SIZE}|g" \
+        ${WORKDIR}/fw_env.config.in \
+        > ${D}${EMMC_UBOOT_ENV_PATH}
+
+    chmod 0644 ${D}${EMMC_UBOOT_ENV_PATH}
+
+    #
+    # generate NAND config
+    #
+    sed \
+        -e "s|@@DEV@@|${UBOOT_FW_ENV_NAND_DEV}|g" \
+        -e "s|@@DEV_RED@@|${UBOOT_FW_ENV_NAND_REDUNDANT_DEV}|g" \
+        -e "s|@@ENV_START@@|${UBOOT_FW_ENV_NAND_START}|g" \
+        -e "s|@@ENV_SIZE@@|${UBOOT_FW_ENV_NAND_SIZE}|g" \
+        -e "s|@@ENV_RED_START@@|${UBOOT_FW_ENV_NAND_REDUNDANT_START}|g" \
+        -e "s|@@ENV_RED_SIZE@@|${UBOOT_FW_ENV_NAND_REDUNDANT_SIZE}|g" \
+        ${WORKDIR}/fw_env.config.in \
+        > ${D}${NAND_UBOOT_ENV_PATH}
+
+    chmod 0644 ${D}${NAND_UBOOT_ENV_PATH}
 }

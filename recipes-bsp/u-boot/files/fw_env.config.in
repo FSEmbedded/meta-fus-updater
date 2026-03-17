@@ -1,0 +1,4 @@
+# U-Boot environment on MMC
+
+@@DEV@@  @@ENV_START@@     @@ENV_SIZE@@
+@@DEV_RED@@  @@ENV_RED_START@@     @@ENV_RED_SIZE@@
