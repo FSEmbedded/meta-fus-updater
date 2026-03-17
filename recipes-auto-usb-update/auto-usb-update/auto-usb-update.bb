@@ -1,26 +1,30 @@
-# The udev rules for automatically calling the update mechanism
+SUMMARY = "FUS USB Update helper"
+DESCRIPTION = "Udev rule, systemd unit and updater wrapper for USB updates"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
-DESCRIPTION = "udev rule for autoupdate"
-RDEPENDS:${PN} = "udev"
-LICENSE = "CLOSED"
-
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-
-SRC_URI = "file://99-fus-updater-usb-auto-mount.rules \
-		   file://usb_fs_updater.sh \
-"
 S = "${WORKDIR}"
 
-FILES:${PN} += " /etc/udev/rules.d/99-fus-updater-usb-auto-mount.rules \
-				 /usr/libexec/usb_fs_updater.sh \
+SRC_URI = " \
+    file://99-fus-updater.rules \
+    file://fus-usb-update@.service \
+    file://usb_fs_updater.sh \
 "
 
-do_install:append(){
-	install -d ${D}/etc/udev/rules.d/
-	install -d ${D}/usr/libexec/
+inherit systemd allarch
 
-	install -m 0444 ${S}/99-fus-updater-usb-auto-mount.rules ${D}/etc/udev/rules.d/
-	install -m 0444 ${S}/usb_fs_updater.sh ${D}/usr/libexec/
+RDEPENDS:${PN} += "udev systemd busybox fs-updater-cli"
 
+SYSTEMD_SERVICE:${PN} = "fus-usb-update@.service"
+# Template units must not be auto-enabled
+SYSTEMD_AUTO_ENABLE:${PN} = "disable"
+
+do_install() {
+    install -d ${D}${sysconfdir}/udev/rules.d
+    install -d ${D}${systemd_system_unitdir}
+    install -d ${D}${libexecdir}
+
+    install -m0644 ${WORKDIR}/99-fus-updater.rules  ${D}${sysconfdir}/udev/rules.d/
+    install -m0644 ${WORKDIR}/fus-usb-update@.service ${D}${systemd_system_unitdir}/
+    install -m0755 ${WORKDIR}/usb_fs_updater.sh      ${D}${libexecdir}/
 }
-

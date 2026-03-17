@@ -1,0 +1,1 @@
+SUBSYSTEM=="block", ENV{DEVTYPE}=="partition", ACTION=="add|change", ENV{ID_FS_TYPE}!="", ENV{ID_FS_LABEL}=="FUS-UPDATER", TAG+="systemd", ENV{SYSTEMD_WANTS}="fus-usb-update@%k.service"

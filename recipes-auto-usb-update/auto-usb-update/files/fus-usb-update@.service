@@ -1,0 +1,22 @@
+# /etc/systemd/system/fus-usb-update@.service
+[Unit]
+Description=FUS USB/SD Updater for %I
+Requires=dev-%i.device
+After=dev-%i.device systemd-udevd.service systemd-timesyncd.service
+Wants=systemd-timesyncd.service
+BindsTo=dev-%i.device
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/udevadm settle --timeout=10
+ExecStart=/usr/libexec/usb_fs_updater.sh %I
+TimeoutStartSec=15min
+Nice=10
+
+ProtectHome=yes
+NoNewPrivileges=yes
+
+# Logging
+SyslogIdentifier=fus-updater
+StandardOutput=journal
+StandardError=journal
