@@ -32,8 +32,9 @@ TOOLCHAIN_TARGET_TASK:append  = " jsoncpp jsoncpp-dev jsoncpp-staticdev"
 TOOLCHAIN_TARGET_TASK:append  = " botan botan-dev botan-staticdev"
 TOOLCHAIN_TARGET_TASK:append  = " tclap tclap-dev"
 TOOLCHAIN_TARGET_TASK:append  = " fs-updater-lib fs-updater-lib-dev fs-updater-lib-staticdev"
+TOOLCHAIN_TARGET_TASK:append  = " util-linux util-linux-dev"
 
-TOOLCHAIN_HOST_TASK:append = " nativesdk-cmake nativesdk-make nativesdk-pkgconfig"
+TOOLCHAIN_HOST_TASK:append = " nativesdk-cmake nativesdk-make nativesdk-pkgconfig nativesdk-libtool"
 
 #### Remove following line if you want to remove the sample application ###
 CORE_IMAGE_EXTRA_INSTALL += " application"
