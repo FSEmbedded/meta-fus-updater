@@ -1,7 +1,8 @@
-# Set paths for fw_env.config and system_conf. These links are used in dynamic_overlay to
-# Create a softlink to the file that is matching the memory configuration.
+# Paths for fw_env.config and system.conf used across multiple recipes.
+# dynamic_overlay creates symlinks at runtime on the writable overlay,
+# pointing to the NAND or eMMC variant on the read-only rootfs.
 
-# fw_env.config is used by the U-Boot toll fw_printenv / fw_setenv
+# fw_env.config is used by the U-Boot tool fw_printenv / fw_setenv
 UBOOT_ENV_PATH = "/rw_fs/root/conf/fw_env.config"
 NAND_UBOOT_ENV_PATH = "${sysconfdir}/fw_env.config.nand"
 EMMC_UBOOT_ENV_PATH = "${sysconfdir}/fw_env.config.mmc"
