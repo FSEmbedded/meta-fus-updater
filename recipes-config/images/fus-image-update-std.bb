@@ -21,7 +21,6 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     auto-usb-update \
     2-stage-boot \
     rauc \
-    rauc-updater \
 "
 
 TOOLCHAIN_TARGET_TASK:append  = " kernel-devsrc"
@@ -38,6 +37,5 @@ TOOLCHAIN_HOST_TASK:append = " nativesdk-cmake nativesdk-make nativesdk-pkgconfi
 
 #### Remove following line if you want to remove the sample application ###
 CORE_IMAGE_EXTRA_INSTALL += " application"
-IMAGE_INSTALL:append = " rauc"
 
 IMAGE_NAME_SUFFIX = "-update"
