@@ -184,6 +184,8 @@ fi
 
 log "Update type ${UPDATE_TYPE:-none} - $update_type"
 
+# set to 0 to handle || operator correctly
+return_state=0
 $FS_UPDATER_BIN --automatic || return_state=$?
 
 # Only reset return_state on successful apply — otherwise failure is masked.
