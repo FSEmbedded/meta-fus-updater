@@ -11,7 +11,7 @@ DESCRIPTION = "Preinit-stage tool that mounts overlay filesystems before \
 systemd starts. Handles A/B slot selection, persistent memory detection, \
 and optional X.509 certificate store for Azure Device Update."
 
-SRCREV ?= "d096ac2b1d77e91274cdd5b54f7384cc9220e168"
+SRCREV ?= "6a28958875487d8e866258e2826f6d7d99a8ad1c"
 DYNOL_SRC_URI ?= "git://github.com/FSEmbedded/dynamic-overlay.git"
 DYNOL_GIT_BRANCH ?= "master"
 
@@ -20,19 +20,15 @@ SRC_URI = " \
     "
 
 S = "${WORKDIR}/git"
-PV = "+git${SRCPV}"
+PV = "1.0.0+git${SRCPV}"
 
 FILES:${PN} = " \
-	${sbindir}/preinit \
 	${sbindir}/dynamic_overlay \
-	/ramdisk_hw_conf \
 "
 
+# Core dependencies (always needed)
 DEPENDS += "\
-	inicpp \
 	libubootenv \
-	zlib \
-	jsoncpp \
 	mtd-utils \
 	util-linux \
 "
@@ -42,46 +38,9 @@ RDEPENDS:${PN} += "\
 	util-linux \
 "
 
-# Set extra C-Make variables.
-EXTRA_OECMAKE += " -DCMAKE_INSTALL_SBINDIR=${sbindir}"
+# Override paths that differ from CMake defaults (symlinks on writable overlay)
+EXTRA_OECMAKE += " -DLOG_BACKEND=KMSG"
 EXTRA_OECMAKE += " -DRAUC_SYSTEM_CONF_PATH=${RAUC_SYSTEM_CONF_PATH}"
-EXTRA_OECMAKE += " -DNAND_RAUC_SYSTEM_CONF_PATH=${NAND_RAUC_SYSTEM_CONF_PATH}"
-EXTRA_OECMAKE += " -DEMMC_RAUC_SYSTEM_CONF_PATH=${EMMC_RAUC_SYSTEM_CONF_PATH}"
 EXTRA_OECMAKE += " -DUBOOT_ENV_PATH=${UBOOT_ENV_PATH}"
-EXTRA_OECMAKE += " -DNAND_UBOOT_ENV_PATH=${NAND_UBOOT_ENV_PATH}"
-EXTRA_OECMAKE += " -DEMMC_UBOOT_ENV_PATH=${EMMC_UBOOT_ENV_PATH}"
-
-# optional block for detection of update device
-# Regular expression to detect boot device (mmc)
-# EXTRA_OECMAKE += " -DPERSISTMEMORY_REGEX_EMMC="root=/dev/mmcblk[0-2]p[0-9]{1,3}""
-# Regular expression to detect boot device (nand) with ubifs.
-# EXTRA_OECMAKE += " -DPERSISTMEMORY_REGEX_NAND="root=/dev/ubiblock0_[0-1]""
-# add other data partition name
-# must be same name in layout of update divice
-# EXTRA_OECMAKE += " -DPERSISTMEMORY_DEVICE_NAME="data""
-
-# set the define to the block number of the secure partition
-# dynamic overlay uses raw read to get keys and
-# configuration for adu agent. dd uses to read data.
-# TODO: add new wic configuration with additional partition
-EXTRA_OECMAKE += " -DEMMC_SECURE_PART_BLK_NR=16384"
-# TODO: add possibility to use mmc replay protected memory block (rpmb)
 
 PACKAGECONFIG ??= ""
-
-# X509 certificate store configuration
-PACKAGECONFIG[use-x509-cert] = "\
-	-DBUILD_X509_CERTIFICATE_STORE_MOUNT=ON \
-	-DTARGET_ADU_DIR_PATH=/adu \
-	-DTARGET_ARCHIV_DIR_PATH=/adu \
-	-DSOURCE_ARCHIVE_MTD_FILE_PATH=/tmp/x509_cert_store.tar.bz2 \
-	-DSOURCE_ARCHIVE_MMC_FILE_PATH=/tmp/x509_cert_store.tar.bz2 \
-	-DFUS_AZURE_CERT_CERTIFICATE_NAME=example-com.cert.pem \
-	-DFUS_AZURE_CERT_KEY_NAME=example-com.key.pem \
-	-DPART_NAME_MTD_CERT=Secure \
-	-DFUS_AZURE_CONFIGURATION=/adu/du-config.json, \
-	-DBUILD_X509_CERTIFICATE_STORE_MOUNT=OFF \
-	"
-
-FILES:${PN}:append = "${@bb.utils.contains('PACKAGECONFIG', 'use-x509-cert', \
-    ' /ramdisk_cert_store' if os.path.exists(d.getVar('D') + '/ramdisk_cert_store') else '', '', d)}"
