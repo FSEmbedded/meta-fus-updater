@@ -13,12 +13,6 @@ SRC_URI = "\
 "
 S = "${WORKDIR}"
 
-do_install() {
-	install -d ${D}
-	# add adu to rootfs because of overlay.ini
-	install -d ${D}/adu
-}
-
 do_deploy() {
 	# copy overlay.ini to deploy dir
 	# used by do_create_application_image function
@@ -28,5 +22,4 @@ do_deploy() {
 
 addtask deploy after do_install
 
-# list files or directories that are placed in a package
-FILES:${PN} += "/adu"
+

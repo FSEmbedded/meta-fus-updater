@@ -22,9 +22,6 @@ APP_BUNDLE_DIR = "${WORKDIR}/app"
 
 do_install() {
     local appdir=${APP_BUNDLE_DIR}
-    install -d ${D}
-    # add adu to rootfs because of overlay.ini
-    install -d ${D}/adu
     # add app directory to workdir
     # use the folder to copy all application data
     # to create application image
@@ -60,8 +57,6 @@ do_clean:append() {
     bb.build.exec_func('fsup_app_clean', d)
 }
 
-PACKAGES += "${PN}-application"
-# list files or directories that are placed in a package
-FILES:${PN} += "\
-    /adu \
-    "
+
+ALLOW_EMPTY:${PN} = "1"
+FILES:${PN} = ""

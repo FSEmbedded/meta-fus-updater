@@ -117,9 +117,6 @@ do_create_application_image() {
         chmod 644 "${IMAGE_ROOTFS}/rw_fs/root/application/app_${slot}.squashfs"
     done
 
-    # Sync to data partition and finalize
-    mkdir -p "${IMAGE_ROOTFS}/adu"
-
     bbnote "Application image creation completed successfully"
 }
 
@@ -186,12 +183,8 @@ python do_create_update_package() {
     import parted
     import bb
 
-    # FUS_USE_INTERMEDIATE_CERT=0
-
     build_variant = d.getVar('FUS_BUILD_VARIANT') or 'dev'
     use_intermediate = d.getVar('FUS_USE_INTERMEDIATE_CERT') == '1'
-
-    # use_intermediate=0
 
     layer_dir = d.getVar('LAYER_BASE_DIR')
     base_rauc_dir = os.path.join(layer_dir, 'rauc')
