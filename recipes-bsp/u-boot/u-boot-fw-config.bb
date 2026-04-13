@@ -19,8 +19,8 @@ RDEPENDS:${PN} = "libubootenv"
 # default devices
 UBOOT_FW_ENV_MMC_DEV ?= "/dev/mmcblk0boot0"
 UBOOT_FW_ENV_MMC_REDUNDANT_DEV ?= "/dev/mmcblk0boot1"
-UBOOT_FW_ENV_NAND_DEV ?= "/dev/mtd0"
-UBOOT_FW_ENV_NAND_REDUNDANT_DEV ?= "/dev/mtd0"
+UBOOT_FW_ENV_NAND_DEV ?= "/dev/mtd2"
+UBOOT_FW_ENV_NAND_REDUNDANT_DEV ?= "/dev/mtd2"
 
 do_install() {
 
