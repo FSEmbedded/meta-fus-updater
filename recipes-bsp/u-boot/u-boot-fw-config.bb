@@ -51,6 +51,7 @@ do_install() {
         -e "s|@@ENV_SIZE@@|${UBOOT_FW_ENV_NAND_SIZE}|g" \
         -e "s|@@ENV_RED_START@@|${UBOOT_FW_ENV_NAND_REDUNDANT_START}|g" \
         -e "s|@@ENV_RED_SIZE@@|${UBOOT_FW_ENV_NAND_REDUNDANT_SIZE}|g" \
+        -e "s|@@ERASE_SIZE@@|${UBOOT_FW_ENV_NAND_ERASE_SIZE}|g" \
         ${WORKDIR}/fw_env.config.in \
         > ${D}${NAND_UBOOT_ENV_PATH}
 
