@@ -376,11 +376,10 @@ def create_rauc_update_mmc(d):
 
     out_dir = os.path.join(deploy_dir, 'rauc_update_mmc')
 
-    # Validate certificates
-    # check_cert_for_codesign(cert, require_digital_signature=True)
-    # if inter_cert:
-    #    check_cert_for_codesign(inter_cert, require_digital_signature=False)
-
+    # Validate certificates have codeSigning extendedKeyUsage
+    check_cert_for_codesign(cert, require_digital_signature=True)
+    if inter_cert:
+        check_cert_for_codesign(inter_cert, require_digital_signature=False)
 
     # Verify input files exist
     if not os.path.exists(wic_img):
