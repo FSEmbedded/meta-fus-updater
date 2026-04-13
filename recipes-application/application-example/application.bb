@@ -17,8 +17,11 @@ REQUIRED_DISTRO_FEATURES = "systemd"
 # add cmake for build process of application
 inherit cmake features_check
 
+# Bundle directory (inside WORKDIR)
+APP_BUNDLE_DIR = "${WORKDIR}/app"
+
 do_install() {
-    local appdir=${WORKDIR}/app
+    local appdir=${APP_BUNDLE_DIR}
     install -d ${D}
     # add adu to rootfs because of overlay.ini
     install -d ${D}/adu
@@ -37,7 +40,7 @@ do_install() {
 }
 
 do_deploy() {
-    local appdir=${WORKDIR}/app
+    local appdir=${APP_BUNDLE_DIR}
     rm -rf ${DEPLOY_DIR_IMAGE}/app
     mkdir -p ${DEPLOY_DIR_IMAGE}/app
     cp -rf ${appdir}/* ${DEPLOY_DIR_IMAGE}/app
