@@ -1,14 +1,14 @@
 ## Dynamic overlay
 
-Dynamic overlay is a part of FSUP framework to application, application overlay and
-persistent memory. The command *dynamic_overlay* would started before init.
+Dynamic overlay is a part of FSUP framework that manages application overlay and
+persistent memory. The command *dynamic_overlay* is started before init.
 
 The *recipe-dynamic_overlay* creates the binary and configured to detect
 persistent partition named *data* and partition for secure data named *secure*. The detection functionality works for block devices like eMMC and mtd devices like NAND.
 
 The recipe configures the build process to integrate
 FSUP framework layout and can be adapted by the user.
-For adaption process set of definitions is avaialble.
+For adaption process set of definitions is available.
 
 #### Enabled definitions:
 - **RAUC_SYSTEM_CONF_PATH** sets path to the system.conf
@@ -23,8 +23,9 @@ For adaption process set of definitions is avaialble.
   fw tools *fw_printenv*, *fw_setenv* boot device NAND.
   Default value is */etc/fw_env.config.nand*.
 - **EMMC_UBOOT_ENV_PATH** sets the path to configuration file for bootloader
-  fw tools *fw_printenv*, *fw_setenv* boot device NAND.
+  fw tools *fw_printenv*, *fw_setenv* boot device eMMC.
   Default value is */etc/fw_env.config.mmc*.
+- **LOG_BACKEND** sets the logging backend. Default value is *KMSG*.
 - **EMMC_SECURE_PART_BLK_NR** sets start block of secure partition.
   At the time it is a RAW partition. Default value is *16384*
 

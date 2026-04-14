@@ -2,13 +2,13 @@
 
 The image *fus-image-updater-std* extends *fus-image-std* image configuration and creates additional images for FSUP framework.
 
-The framework is based on RAUC and use the tool to update devices. RAUC update is descirbed by configuration file.
+The framework is based on RAUC and uses the tool to update devices. RAUC update is described by configuration file.
 
 ### RAUC artifacts
 
 The framework offers configurations for 2 boot device types:
-- NAND - in subdirecotry *rauc/rauc_template_nand/manifest.raucm*
-- eMMC - in subdirecotry *rauc/rauc_template_emmc/manifest.raucm*
+- NAND - in subdirectory *rauc/rauc_template_nand/manifest.raucm*
+- eMMC - in subdirectory *rauc/rauc_template_emmc/manifest.raucm*
 
 > Note: Currently only eMMC boot device is supported.
 

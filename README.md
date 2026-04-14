@@ -2,13 +2,14 @@
 
 The layer **meta-fus-updater** is a main component of **FSUP-Framework** integration. The framework based on RAUC and uses different open source libraries to update u-boot, kernel, root file system and application. The framework follows the idea of always having a working configuration.
 
-## Overview - Suppored architecture
+## Overview - Supported architecture
 
-| Architecure | Boot Device | Version | State    |
-|-------------|-------------|---------|----------|
-| fsimx8mp    | eMMC        | >=fsimx8mp-2024.11      | &#10003; |
-| fsimx93     |             | >=fsimx93-2025.08        | &#10003; |
-| fsimx8mm    |             | |&#10007; |
+| Architecture | Boot Device | Version              | State    |
+|--------------|-------------|----------------------|----------|
+| fsimx8mp     | eMMC        | >=fsimx8mp-2024.11   | &#10003; |
+| fsimx93      | eMMC        | >=fsimx93-2025.08    | &#10003; |
+| fsimx8mm     | eMMC        | >=fsimx8mm-Y2026.04  | &#10003; |
+| fsimx8mn     |             |                      | &#10007; |
 
 
 ## Building images

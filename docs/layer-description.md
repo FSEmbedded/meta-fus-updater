@@ -7,7 +7,7 @@ The creation process is part of do image task and extends them to
 create following images
 - **do_create_update_package**
   - creates squashfs images of rootfs, persistent-partition,
-    application image for eMCC and NAND boot device.
+    application image for eMMC and NAND boot device.
   - creates rauc artifacts
     - *rauc_update_nand.artifact* would be created if ubifs
       image type is defined
@@ -16,7 +16,7 @@ create following images
 - **create_update_images** task creates fsupdate images
   for eMMC and NAND in image post process.
   They are three images types:
-  - *firmware.fs* is firmware update for fs-updater cli.s
+  - *firmware.fs* is firmware update for fs-updater cli
   - *application.fs* is application update for fs-updater cli
   - *common-update.fs* is firmware and application update for fs-updater cli
 
@@ -24,7 +24,7 @@ create following images
 
 Ensures that the build system uses correct paths and priority to find and
 process the recipes and metadata in the layer.
-- compatible: kirkstone
+- compatible: kirkstone, scarthgap
 - priority: 10
 
 ### rauc/*:
@@ -65,10 +65,11 @@ Place it below the files/ directory.
 ### recipes-rauc-core/*:
 
 Adaptions for the rauc update process.
+- *rauc_%.bbappend* adds mark-good service for FSUP framework
 
-### recipes-u-boot-fw-utils/*:
+### recipes-bsp/*:
 
-Add fw_enc.config for nand and eMMC memory
+Add fw_env.config for NAND and eMMC memory
 
 ### wic/*:
 
