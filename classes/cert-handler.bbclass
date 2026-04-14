@@ -1,9 +1,8 @@
 # classes/cert-handler.bbclass
 
-# Base paths relative to Yocto layer structure
-META_FUS_LAYER_BASE     := "${TOPDIR}/../sources/meta-fus-updater"
-SCRIPTS_BASE            := "${META_FUS_LAYER_BASE}/scripts"
-CERT_BASE_DIR           ??= "${META_FUS_LAYER_BASE}/certs"
+# Base paths — LAYER_BASE_DIR is set to ${LAYERDIR} in conf/layer.conf
+SCRIPTS_BASE            := "${LAYER_BASE_DIR}/scripts"
+CERT_BASE_DIR           ??= "${LAYER_BASE_DIR}/certs"
 
 # Ensure openssl-native is available in sysroot before running the task
 do_generate_certificates[depends] += "openssl-native:do_populate_sysroot"
