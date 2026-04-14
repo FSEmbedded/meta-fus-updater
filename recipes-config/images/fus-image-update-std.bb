@@ -24,7 +24,6 @@ CORE_IMAGE_EXTRA_INSTALL += " \
 "
 
 TOOLCHAIN_TARGET_TASK:append  = " kernel-devsrc"
-TOOLCHAIN_TARGET_TASK:append  = " inicpp inicpp-dev inicpp-staticdev"
 TOOLCHAIN_TARGET_TASK:append  = " libubootenv libubootenv-dev libubootenv-staticdev"
 TOOLCHAIN_TARGET_TASK:append  = " zlib zlib-dev zlib-staticdev"
 TOOLCHAIN_TARGET_TASK:append  = " jsoncpp jsoncpp-dev jsoncpp-staticdev"
