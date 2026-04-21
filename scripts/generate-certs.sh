@@ -3,10 +3,10 @@
 # RAUC/App PKI Generator for multiple environments and purposes
 # Supports: --env=<dev|prod> --purpose=<system|app> [--force] [--no-intermediate]
 
-set -e    # Exit on first error
-set -x    # Enable command tracing
-
 set -euo pipefail
+
+# Use native sysroot openssl if provided by cert-handler.bbclass
+OPENSSL="${OPENSSL_BIN:-openssl}"
 
 # Default values
 ENVIRONMENT="dev"
@@ -69,11 +69,10 @@ ROOT_CERT="$ROOT_DIR/root.cert.pem"
 
 if [[ ! -f "$ROOT_CERT" || "$FORCE" -eq 1 ]]; then
     echo "[+] Creating root certificate for environment '$ENVIRONMENT'..."
-    echo "[+] which openssl $(which openssl)"
-    # openssl genrsa -out "$ROOT_KEY" 4096
-    openssl genrsa -out "$ROOT_KEY" 4096
+    echo "[+] which openssl $(which "$OPENSSL")"
+    "$OPENSSL" genrsa -out "$ROOT_KEY" 4096
     chmod 600 "$ROOT_KEY"
-    openssl req -x509 -new -key "$ROOT_KEY" \
+    "$OPENSSL" req -x509 -new -key "$ROOT_KEY" \
         -sha256 -days 7300 \
         -subj "/CN=Root-CA-${ENVIRONMENT}" \
         -out "$ROOT_CERT" \
@@ -100,13 +99,13 @@ INTER_CERT="$PURPOSE_DIR/inter.cert.pem"
 
 if [[ "$USE_INTERMEDIATE" -eq 1 ]]; then
     echo "[+] Creating intermediate certificate for '$PURPOSE'..."
-    openssl genrsa -out "$INTER_KEY" 4096
+    "$OPENSSL" genrsa -out "$INTER_KEY" 4096
     chmod 600 "$INTER_KEY"
-    openssl req -new -key "$INTER_KEY" \
+    "$OPENSSL" req -new -key "$INTER_KEY" \
         -subj "/CN=Intermediate-CA-${ENVIRONMENT}-${PURPOSE}" \
         -out "$PURPOSE_DIR/inter.csr.pem"
 
-    openssl x509 -req -in "$PURPOSE_DIR/inter.csr.pem" \
+    "$OPENSSL" x509 -req -in "$PURPOSE_DIR/inter.csr.pem" \
         -CA "$ROOT_CERT" -CAkey "$ROOT_KEY" \
         -CAserial "$PURPOSE_DIR/inter.srl" -CAcreateserial \
         -out "$INTER_CERT" \
@@ -129,15 +128,15 @@ SIGN_KEY="$PURPOSE_DIR/sign.key.pem"
 SIGN_CERT="$PURPOSE_DIR/sign.cert.pem"
 
 echo "[+] Creating signing certificate for '$PURPOSE'..."
-openssl genrsa -out "$SIGN_KEY" 2048
+"$OPENSSL" genrsa -out "$SIGN_KEY" 2048
 chmod 600 "$SIGN_KEY"
-openssl req -new -key "$SIGN_KEY" \
+"$OPENSSL" req -new -key "$SIGN_KEY" \
     -subj "/CN=Signing-Cert-${ENVIRONMENT}-${PURPOSE}" \
     -out "$PURPOSE_DIR/sign.csr.pem"
 
 if [[ "$USE_INTERMEDIATE" -eq 1 ]]; then
     # Sign with intermediate
-    openssl x509 -req -in "$PURPOSE_DIR/sign.csr.pem" \
+    "$OPENSSL" x509 -req -in "$PURPOSE_DIR/sign.csr.pem" \
         -CA "$INTER_CERT" -CAkey "$INTER_KEY" \
         -CAserial "$PURPOSE_DIR/sign.srl" -CAcreateserial \
         -out "$SIGN_CERT" \
@@ -154,7 +153,7 @@ EOF
 )
 else
     # Sign directly with root
-    openssl x509 -req -in "$PURPOSE_DIR/sign.csr.pem" \
+    "$OPENSSL" x509 -req -in "$PURPOSE_DIR/sign.csr.pem" \
         -CA "$ROOT_CERT" -CAkey "$ROOT_KEY" \
         -CAserial "$PURPOSE_DIR/sign.srl" -CAcreateserial \
         -out "$SIGN_CERT" \
