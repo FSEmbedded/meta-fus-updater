@@ -2,7 +2,7 @@
 
 NO_UPDATE_REBOOT_PENDING=27
 
-fs-updater --update_reboot_state
+@SBINDIR@/fs-updater --update_reboot_state
 state=$?
 
 if [ "$state" -eq "$NO_UPDATE_REBOOT_PENDING" ]; then
