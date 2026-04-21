@@ -12,8 +12,8 @@ TMP_DIR="/tmp"
 TMP_PKG=""
 # Success codes from fs_updater_error.h
 UPDATE_SUCCESSFUL="0 4 8"
-# no update pending
-UPDATE_REBOOT_PENDING="27"
+# exit code from --update_reboot_state: idle, no pending update
+NO_UPDATE_REBOOT_PENDING="27"
 
 log() {
     ts="$(date +'%Y-%m-%d %H:%M:%S')"
@@ -50,11 +50,11 @@ if [ ! -x "$FS_UPDATER_BIN" ]; then
     exit 1
 fi
 
-# Check for pending update state from previous run, and log it if found
+# Non-idle reboot state from a previous run — skip automatic update
 return_state=0
 $FS_UPDATER_BIN --update_reboot_state || return_state=$?
-if [ "$return_state" -ne "$UPDATE_REBOOT_PENDING" ]; then
-    log "Update pending, last reboot state (return_state=$return_state)"
+if [ "$return_state" -ne "$NO_UPDATE_REBOOT_PENDING" ]; then
+    log "Non-idle reboot state, skipping automatic update (return_state=$return_state)"
     exit 0
 fi
 
