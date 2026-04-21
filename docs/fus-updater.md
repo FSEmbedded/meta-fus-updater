@@ -1,42 +1,60 @@
 ## F&S Updater CLI
-One core component of F&S update framework is command line interface (CLI).
+
+One core component of F&S update framework is the command line interface (CLI).
 The tool integrates the RAUC firmware, F&S application and Azure Cloud support.
 This allows the user uniform calls for different update types.
 
-In general the tool arguments are classified in 3 groups
+In general the tool arguments are classified in 3 groups:
 - **local usage** - local update process on the board
-- **generic usage** - for local and azure process
-- **azure cloud** - update process with Azure Cloud
+- **generic usage** - for local and Azure process
+- **Azure Cloud** - update process with Azure Cloud
 
-Following parameter are available
+### CLI Arguments
 
-| CLI argument        | Description             |
-|---------------------|-------------------------|
-| is_fw_state_bad     | Check firmware state for bad. Accepted states: A or B (local usage) |
-| set_fw_state_bad    | Mark firmware A or B bad. Accepted states: A or B (local usage) |
-| is_app_state_bad    | Check application state for bad. Accepted states: A or B (local usage) |
-| set_app_state_bad   | Mark application A or B bad. Accepted states: A or B (local usage) |
-| is_update_available | Checks if an update is available on the server (Azure Cloud) |
-| download_update     | Starts download of the available update from the server (Azure Cloud). Needs usage of command is_update_available. |
-| download_progress   | Shows the progress of the current update (Azure Cloud). Can be used during download to get progress state. |
-| install_update      | Installs downloaded update (Azure Cloud). Need usage of command download_update with finished state. |
-| apply_update        | Updates ‘update’ state and initiate switch to the installed version (generic usage) |
-| version             | Prints CLI version (local usage) |
-| application_version | Prints current application version (generic usage) |
-| firmware_version    | Prints current firmware version (generic usage) |
-| debug               | Enables additional messages in debug mode (local usage) |
-| automatic           | Automatic update mode. Allows automatic update from usb stick (local usage) |
-| update_reboot_state | Gets state of environment update (generic usage) |
-| commit_update       | Runs after boot and waits for application response (generic usage) |
-| switch_app_slot     | Switch to next stable application slot. (local usage) |
-| switch_fw_slot      | Switch to next stable firmware slot. (local usage) |
-| rollback_update     | Rollback of the last installed update. Start before update commit necessary. (local usage) |
-| update_file         | Initiates update process and installs update image. Expects absolute path to the image. (generic usage) |
-| --, --ignore_rest   | Ignores the rest of the labeled arguments following this flag (local usage) |
-
-Each argument returns different state. All error states are described in our **FS Update Framework** documentation.
+| CLI argument | Type | Description |
+|---|---|---|
+| `--update_file` | string | Initiates update process and installs update image. Expects absolute path to the image. (generic) |
+| `--update_type` | string | Force update type: `"fw"` or `"app"`. Optional — auto-detected from fsupdate.json if omitted. (generic) |
+| `--commit_update` | switch | Commit pending update after successful reboot. (generic) |
+| `--rollback_update` | switch | Rollback the last installed update. Must be used before commit. (local) |
+| `--switch_fw_slot` | switch | Switch to next stable firmware slot. Requires `--apply_update`. (local) |
+| `--switch_app_slot` | switch | Switch to next stable application slot. Requires `--apply_update`. (local) |
+| `--apply_update` | switch | Apply pending update/rollback/switch and initiate reboot. (generic) |
+| `--update_reboot_state` | switch | Print current update state from U-Boot environment. (generic) |
+| `--firmware_version` | switch | Print current firmware version. (generic) |
+| `--application_version` | switch | Print current application version. (generic) |
+| `--set_fw_state_bad` | char | Mark firmware state A or B as bad. (local) |
+| `--is_fw_state_bad` | char | Check if firmware state A or B is bad. (local) |
+| `--set_app_state_bad` | char | Mark application state A or B as bad. (local) |
+| `--is_app_state_bad` | char | Check if application state A or B is bad. (local) |
+| `--automatic` | switch | Automatic update mode. Reads `UPDATE_STICK` and `UPDATE_FILE` env vars. (local) |
+| `--debug` | switch | Enable debug-level logging. (local) |
+| `--version` | switch | Print CLI version. (local) |
+| `--is_update_available` | switch | Check if an update is available on the server. (Azure Cloud) |
+| `--download_update` | switch | Start download of available update from server. (Azure Cloud) |
+| `--download_progress` | switch | Show progress of current download. (Azure Cloud) |
+| `--install_update` | switch | Install downloaded update. (Azure Cloud) |
 
 > Note: Argument group *Azure Cloud* can be used only with *meta-fus-updater-azure*.
+
+### Return Codes
+
+Each CLI operation returns a numeric exit code. Codes are grouped by operation type:
+
+| Range | Operation | Codes |
+|-------|-----------|-------|
+| 0-3 | Firmware update | 0=success, 1=progress error, 2=internal error, 3=system error |
+| 4-7 | Application update | 4=success, 5=progress error, 6=internal error, 7=system error |
+| 8-11 | Combined (FW+APP) update | 8=success, 9=progress error, 10=internal error, 11=system error |
+| 12-15 | Rollback | 12=success, 13=progress error, 14=internal error, 15=system error |
+| 16-19 | Commit | 16=committed, 17=not needed, 18=invalid U-Boot state, 19=system error |
+| 20-33 | Reboot state query | Maps `update_reboot_state` enum to exit code (20-33) |
+| 34-37 | Update available (Azure) | 34=none, 35=FW, 36=APP, 37=FW+APP |
+| 38-41 | Download (Azure) | 38=no queue, 39=started, 40=already started, 41=failed |
+| 42-45 | Download progress (Azure) | 42=not started, 43=waiting, 44=in progress, 45=finished |
+| 46-49 | Install (Azure) | 46=no queue, 47=in progress, 48=finished, 49=failed |
+| 50-51 | Apply | 50=success, 51=failed |
+| 52-54 | Get/set state | 52=success, 53=wrong parameter, 54=state is bad |
 
 ## Update Types
 
