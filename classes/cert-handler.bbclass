@@ -18,9 +18,9 @@ python do_generate_certificates() {
 
     # Configuration from BitBake variables
     script           = os.path.join(d_("SCRIPTS_BASE"), "generate-certs.sh")
-    variant          = d_("BUILD_VARIANT") or "dev"
+    variant          = d_("FUS_BUILD_VARIANT") or "dev"
     purpose          = d_("CERT_PURPOSE") or "system"
-    use_intermediate = d_("USE_INTERMEDIATE_CERT") or "1"
+    use_intermediate = d_("FUS_USE_INTERMEDIATE_CERT") or "1"
     cert_base_dir    = d_("CERT_BASE_DIR")
 
     # Derived paths
@@ -52,15 +52,30 @@ python do_generate_certificates() {
     if variant == "prod" and not os.path.exists(keyring_file):
         bb.fatal(f"[cert-handler] Production keyring not found at {keyring_file}. Aborting.")
 
-    # Avoid regeneration if already present (idempotent)
+    # Config marker to detect stale certs after setting changes
+    config_marker = os.path.join(cert_dir, ".cert-config")
+    marker_content = f"variant={variant}\npurpose={purpose}\nuse_intermediate={use_intermediate}\n"
+    force_regen = False
+
     if os.path.exists(keyring_file):
-        bb.note(f"[cert-handler] Keyring already exists at {keyring_file}, skipping generation.")
-        return
+        if os.path.exists(config_marker):
+            with open(config_marker) as f:
+                if f.read() == marker_content:
+                    bb.note(f"[cert-handler] Keyring exists and config matches, skipping generation.")
+                    return
+                else:
+                    bb.warn(f"[cert-handler] Certificate config changed, regenerating certificates.")
+                    force_regen = True
+        else:
+            bb.note(f"[cert-handler] Keyring already exists at {keyring_file}, skipping generation.")
+            return
 
     # Assemble command
     cmd = [script, f"--env={variant}", f"--purpose={purpose}"]
     if use_intermediate != "1":
         cmd.append("--no-intermediate")
+    if force_regen:
+        cmd.append("--force")
 
     # Ensure script is executable
     os.chmod(script, 0o755)
@@ -69,9 +84,17 @@ python do_generate_certificates() {
 
     # Run the generation script with prepared environment
     try:
-        subprocess.run(cmd, check=True, env=env)
+        result = subprocess.run(cmd, check=True, env=env,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.stdout:
+            bb.note(result.stdout.decode().strip())
     except subprocess.CalledProcessError as e:
-        bb.fatal(f"[cert-handler] generate-certs.sh failed (exit code {e.returncode})")
+        stderr = e.stderr.decode().strip() if e.stderr else "Unknown error"
+        bb.fatal(f"[cert-handler] generate-certs.sh failed (exit code {e.returncode}): {stderr}")
+
+    # Write config marker for future change detection
+    with open(config_marker, 'w') as f:
+        f.write(marker_content)
 }
 
 # Ensure task runs before configuration
