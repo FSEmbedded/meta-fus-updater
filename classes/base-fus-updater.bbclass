@@ -39,7 +39,7 @@ do_create_application_image() {
     local build_variant="${FUS_BUILD_VARIANT}"
     local cert_base="${LAYER_BASE_DIR}/certs/${build_variant}/app"
     local sign_dir="${cert_base}"
-    local root_key="${sign_dir}/sign.key.pem"
+    local sign_key="${sign_dir}/sign.key.pem"
     local sign_cert="${sign_dir}/sign.cert.pem"
     local chain_cert="${sign_dir}/chain.cert.pem"
 
@@ -55,7 +55,7 @@ do_create_application_image() {
     else
         APP_CERT="${sign_cert}"
     fi
-    APP_KEY="${root_key}"
+    APP_KEY="${sign_key}"
 
     # Validate signing files
     for f in "${APP_KEY}" "${APP_CERT}"; do
@@ -66,6 +66,19 @@ do_create_application_image() {
             bbfatal "Signing file not readable: ${f}"
         fi
     done
+
+    # Verify signing cert chains to the root cert deployed as keyring on the device
+    local root_cert="${LAYER_BASE_DIR}/certs/${build_variant}/root/root.cert.pem"
+    if [ ! -f "${root_cert}" ]; then
+        bbfatal "Root certificate not found: ${root_cert}"
+    fi
+    if [ "${FUS_USE_INTERMEDIATE_CERT}" = "1" ]; then
+        openssl verify -CAfile "${root_cert}" -untrusted "${inter_cert}" "${sign_cert}" \
+            || bbfatal "Signing cert does not chain to root (with intermediate). Regenerate certs."
+    else
+        openssl verify -CAfile "${root_cert}" "${sign_cert}" \
+            || bbfatal "Signing cert does not chain to root (without intermediate). Regenerate certs with --no-intermediate."
+    fi
 
     # Define application image directory
     local IMAGE_ROOTFS_FUS_UPDATER_BASE="${IMAGE_ROOTFS}/.."
