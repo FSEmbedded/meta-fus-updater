@@ -27,13 +27,15 @@ do_install() {
     # to create application image
     install -d ${appdir}
     install -d ${appdir}/etc
-    install -d ${appdir}/usr/bin
-    install ${B}/app_sample ${appdir}/usr/bin
+    install -d ${appdir}/usr/local/bin
+    install ${B}/app_sample ${appdir}/usr/local/bin
     install -d ${appdir}/${systemd_system_unitdir}
     install -m 0644 ${S}/start_application.service ${appdir}/${systemd_system_unitdir}
     # the generator enable application start service
     install -d ${appdir}/${systemd_unitdir}/system-generators/
     install -m 0755 ${WORKDIR}/systemd-application-generator ${appdir}/${systemd_unitdir}/system-generators/
+    # install to rootfs
+    install -d ${D}/usr/local/bin
 }
 
 do_deploy() {
@@ -59,4 +61,4 @@ do_clean:append() {
 
 
 ALLOW_EMPTY:${PN} = "1"
-FILES:${PN} = ""
+FILES:${PN} = "/usr/local/bin"

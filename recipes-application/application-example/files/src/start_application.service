@@ -2,7 +2,7 @@
 Description=Start dummy application service
 
 [Service]
-ExecStart=/usr/bin/app_sample
+ExecStart=/usr/local/bin/app_sample
 
 [Install]
 WantedBy=multi-user.target
