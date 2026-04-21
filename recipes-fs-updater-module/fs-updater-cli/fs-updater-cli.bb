@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171d
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRCREV ?= "41285300fe053b1802ba7533e12d4d303a02efa6"
+SRCREV ?= "ddcec6fab40fe87a46c63a9dccd73b8b4330b8d6"
 FSUPCLI_SRC_URI ?= "git://github.com/FSEmbedded/fs-updater-cli.git"
 FSUPCLI_GIT_BRANCH ?= "master"
 
