@@ -4,7 +4,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 inherit base-fus-updater
 
-FSUP_WKS_FILE ??="fus-updater-sdcard.wks.in"
+FSUP_WKS_FILE ??= "fus-updater-sdcard.wks.in"
 
 WKS_FILE = "${FSUP_WKS_FILE}"
 IMAGE_FSTYPES:append = " wic update_package"

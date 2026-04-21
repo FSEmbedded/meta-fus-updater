@@ -6,8 +6,10 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171d
 inherit cmake pkgconfig
 require includes/system_paths.inc
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-DESCRIPTION = "dynamic-overlay"
+SUMMARY = "Dynamic overlay filesystem mounting for F&S A/B updates"
+DESCRIPTION = "Preinit-stage tool that mounts overlay filesystems before \
+systemd starts. Handles A/B slot selection, persistent memory detection, \
+and optional X.509 certificate store for Azure Device Update."
 
 SRCREV ?= "d096ac2b1d77e91274cdd5b54f7384cc9220e168"
 DYNOL_SRC_URI ?= "git://github.com/FSEmbedded/dynamic-overlay.git"
