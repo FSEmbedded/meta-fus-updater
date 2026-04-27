@@ -8,7 +8,7 @@ SECTION = "libs"
 
 inherit cmake pkgconfig
 
-SRCREV ?= "3f153774676a53e25872d493e495a74901ca5e19"
+SRCREV ?= "f2217f6c4b7971afc98e0a6c92d94f9ed65279f1"
 FSUPLIB_SRC_URI ?= "git://github.com/FSEmbedded/fs-updater-lib.git"
 FSUPLIB_GIT_BRANCH ?= "master"
 
