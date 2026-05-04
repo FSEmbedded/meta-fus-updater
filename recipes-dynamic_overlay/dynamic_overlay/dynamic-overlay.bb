@@ -11,7 +11,7 @@ DESCRIPTION = "Preinit-stage tool that mounts overlay filesystems before \
 systemd starts. Handles A/B slot selection, persistent memory detection, \
 and optional X.509 certificate store for Azure Device Update."
 
-SRCREV ?= "ac1185960601921c223c21ddc2b6830777f92d66"
+SRCREV ?= "b24cbdd338930d689b6e628a40de913104afe9ab"
 DYNOL_SRC_URI ?= "git://github.com/FSEmbedded/dynamic-overlay.git"
 DYNOL_GIT_BRANCH ?= "master"
 
