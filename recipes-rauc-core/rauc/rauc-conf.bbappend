@@ -44,6 +44,6 @@ do_install() {
 }
 
 FILES:${PN} += "\
-    /rw_fs/root \
+    ${FUS_PERSISTENT_ROOT} \
     ${sysconfdir}/fw_version \
     "

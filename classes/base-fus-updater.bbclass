@@ -11,16 +11,16 @@ DEPENDS = " \
 
 remove_fw_env_config() {
     # create persistent conf directory
-    install -d ${IMAGE_ROOTFS}/rw_fs/root/conf
+    install -d ${IMAGE_ROOTFS}${FUS_PERSISTENT_ROOT}/conf
 
     # remove old static configuration in rootfs
     rm -f ${IMAGE_ROOTFS}${sysconfdir}/fw_env.config \
           ${IMAGE_ROOTFS}${sysconfdir}/system.conf
 
     # Create symbolic links
-    ln -sf /rw_fs/root/conf/fw_env.config  \
+    ln -sf ${FUS_PERSISTENT_ROOT}/conf/fw_env.config  \
           ${IMAGE_ROOTFS}${sysconfdir}/fw_env.config
-    ln -sf /rw_fs/root/conf/system.conf    \
+    ln -sf ${FUS_PERSISTENT_ROOT}/conf/system.conf    \
           ${IMAGE_ROOTFS}${sysconfdir}/rauc/system.conf
 }
 
@@ -122,12 +122,12 @@ do_create_application_image() {
     fi
 
     # Install into rootfs slots
-    mkdir -p "${IMAGE_ROOTFS}/rw_fs/root/application"
+    mkdir -p "${IMAGE_ROOTFS}${FUS_APPLICATION_DIR}"
     for slot in a b; do
-        cp -a "${OUTPUT_IMAGE_BASE}_unsigned" "${IMAGE_ROOTFS}/rw_fs/root/application/app_${slot}.squashfs" \
+        cp -a "${OUTPUT_IMAGE_BASE}_unsigned" "${IMAGE_ROOTFS}${FUS_APPLICATION_DIR}/app_${slot}.squashfs" \
             || bbfatal "Failed to copy to app_${slot}.squashfs"
-        chown root:root "${IMAGE_ROOTFS}/rw_fs/root/application/app_${slot}.squashfs"
-        chmod 644 "${IMAGE_ROOTFS}/rw_fs/root/application/app_${slot}.squashfs"
+        chown root:root "${IMAGE_ROOTFS}${FUS_APPLICATION_DIR}/app_${slot}.squashfs"
+        chmod 644 "${IMAGE_ROOTFS}${FUS_APPLICATION_DIR}/app_${slot}.squashfs"
     done
 
     bbnote "Application image creation completed successfully"
@@ -146,14 +146,14 @@ do_create_squashfs_rootfs_images() {
     local IMAGE_DATA_PARTITION_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/data_partition
     local IMAGE_ROOTFS_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
 
-    mkdir -p ${IMAGE_ROOTFS}/rw_fs/root/application/current
+    mkdir -p ${IMAGE_ROOTFS}${FUS_APPLICATION_DIR}/current
     cp -a ${IMAGE_ROOTFS}/* ${IMAGE_ROOTFS_FUS_UPDATER}
 
     rm -rf ${IMAGE_ROOTFS_FUS_UPDATER}/app
 
     do_create_application_image
 
-    cp -a ${IMAGE_ROOTFS}/rw_fs/root/* ${IMAGE_DATA_PARTITION_FUS_UPDATER}
+    cp -a ${IMAGE_ROOTFS}${FUS_PERSISTENT_ROOT}/* ${IMAGE_DATA_PARTITION_FUS_UPDATER}
 
     # create fsupdate images for nand boot device
     if [[ "${IMAGE_FSTYPES}" == *"ubifs"* ]]; then

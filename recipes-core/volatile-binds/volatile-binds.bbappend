@@ -12,7 +12,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 # Root directory for persistent storage - can be overridden in machine config
-VOLATILE_PERSISTENT_ROOT ?= "/rw_fs/root"
+VOLATILE_PERSISTENT_ROOT ?= "${FUS_PERSISTENT_ROOT}"
 
 # Define sizes for tmpfs mounts - using underscores for variable names
 VOLATILE_SIZE_var_cache ?= "24M"
