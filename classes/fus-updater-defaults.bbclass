@@ -5,6 +5,14 @@ APPLICATION_VERSION ?= "20241019"
 APPLICATION_CONTAINER_NAME ?= "application_container"
 APPLICATION_DEPLOY_DIR ?= "${DEPLOY_DIR_IMAGE}/app"
 
+# Application deployment mode:
+#   "container" (default) - app is built as a signed squashfs in the data
+#                           partition (app_a/b.squashfs), OTA-updatable.
+#   "rootfs"              - app baked into the rootfs image (no data-partition
+#                           container; app updated only via full firmware update).
+#                           NOTE: not yet implemented (planned).
+FUS_APPLICATION_DEPLOY_MODE ?= "container"
+
 # Variables for firmware image creation
 FIRMWARE_VERSION ?= "20241019"
 

@@ -27,6 +27,14 @@ remove_fw_env_config() {
 # Revised do_create_application_image to support both root and intermediate certificates
 # Use chain.cert.pem in sign directory, consistent with RAUC usage.
 do_create_application_image() {
+    # Deployment-mode gate. The toggle lives in fus-updater-defaults.bbclass
+    # (FUS_APPLICATION_DEPLOY_MODE). Only "container" is implemented; "rootfs"
+    # (app baked into the rootfs, no data-partition container) is planned. Fail
+    # fast on any other value instead of producing a broken image.
+    if [ "${FUS_APPLICATION_DEPLOY_MODE}" != "container" ]; then
+        bbfatal "FUS_APPLICATION_DEPLOY_MODE='${FUS_APPLICATION_DEPLOY_MODE}' not supported (only 'container'); 'rootfs' mode is planned."
+    fi
+
     # Validate required variables
     if [ -z "${FUS_BUILD_VARIANT}" ]; then
         bbfatal "FUS_BUILD_VARIANT must be set (prod/dev)"
