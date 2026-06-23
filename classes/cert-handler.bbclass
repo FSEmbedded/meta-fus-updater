@@ -1,8 +1,10 @@
 # classes/cert-handler.bbclass
 
-# Base paths — LAYER_BASE_DIR is set to ${LAYERDIR} in conf/layer.conf
+# Cert/signing config defaults (CERT_BASE_DIR, FUS_BUILD_VARIANT, FUS_USE_INTERMEDIATE_CERT)
+inherit fus-cert-defaults
+
+# Script base — LAYER_BASE_DIR is set to ${LAYERDIR} in conf/layer.conf
 SCRIPTS_BASE            := "${LAYER_BASE_DIR}/scripts"
-CERT_BASE_DIR           ??= "${LAYER_BASE_DIR}/certs"
 
 # Ensure openssl-native is available in sysroot before running the task
 do_generate_certificates[depends] += "openssl-native:do_populate_sysroot"
@@ -18,9 +20,9 @@ python do_generate_certificates() {
 
     # Configuration from BitBake variables
     script           = os.path.join(d_("SCRIPTS_BASE"), "generate-certs.sh")
-    variant          = d_("FUS_BUILD_VARIANT") or "dev"
+    variant          = d_("FUS_BUILD_VARIANT")
     purpose          = d_("CERT_PURPOSE") or "system"
-    use_intermediate = d_("FUS_USE_INTERMEDIATE_CERT") or "1"
+    use_intermediate = d_("FUS_USE_INTERMEDIATE_CERT")
     cert_base_dir    = d_("CERT_BASE_DIR")
 
     # Derived paths
