@@ -27,13 +27,21 @@ remove_fw_env_config() {
 # Revised do_create_application_image to support both root and intermediate certificates
 # Use chain.cert.pem in sign directory, consistent with RAUC usage.
 do_create_application_image() {
-    # Deployment-mode gate. The toggle lives in fus-updater-defaults.bbclass
-    # (FUS_APPLICATION_DEPLOY_MODE). Only "container" is implemented; "rootfs"
-    # (app baked into the rootfs, no data-partition container) is planned. Fail
-    # fast on any other value instead of producing a broken image.
-    if [ "${FUS_APPLICATION_DEPLOY_MODE}" != "container" ]; then
-        bbfatal "FUS_APPLICATION_DEPLOY_MODE='${FUS_APPLICATION_DEPLOY_MODE}' not supported (only 'container'); 'rootfs' mode is planned."
-    fi
+    # Deployment-mode branch. The toggle lives in fus-updater-defaults.bbclass
+    # (FUS_APPLICATION_DEPLOY_MODE). "container" builds and signs the app squashfs
+    # and injects it into the data partition; "rootfs" ships the app as part of the
+    # normal rootfs (delivered by a consumer recipe), so there is no container to
+    # build or inject here -> no-op. Fail fast on any unknown value.
+    case "${FUS_APPLICATION_DEPLOY_MODE}" in
+        container) : ;;
+        rootfs)
+            bbnote "FUS_APPLICATION_DEPLOY_MODE=rootfs: skipping application container creation/injection"
+            return 0
+            ;;
+        *)
+            bbfatal "FUS_APPLICATION_DEPLOY_MODE='${FUS_APPLICATION_DEPLOY_MODE}' not supported (container|rootfs)"
+            ;;
+    esac
 
     # Validate required variables
     if [ -z "${FUS_BUILD_VARIANT}" ]; then
@@ -154,11 +162,16 @@ do_create_squashfs_rootfs_images() {
     local IMAGE_DATA_PARTITION_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/data_partition
     local IMAGE_ROOTFS_FUS_UPDATER=${IMAGE_ROOTFS_FUS_UPDATER_BASE}/rootfs_temp
 
-    mkdir -p ${IMAGE_ROOTFS}${FUS_APPLICATION_DIR}/current
+    # container mode keeps the app under FUS_APPLICATION_DIR (overlay mount point);
+    # rootfs mode ships the app in the rootfs itself, so this dir is not needed.
+    if [ "${FUS_APPLICATION_DEPLOY_MODE}" = "container" ]; then
+        mkdir -p ${IMAGE_ROOTFS}${FUS_APPLICATION_DIR}/current
+    fi
     cp -a ${IMAGE_ROOTFS}/* ${IMAGE_ROOTFS_FUS_UPDATER}
 
     rm -rf ${IMAGE_ROOTFS_FUS_UPDATER}/app
 
+    # no-op in rootfs mode (early return inside the function)
     do_create_application_image
 
     cp -a ${IMAGE_ROOTFS}${FUS_PERSISTENT_ROOT}/* ${IMAGE_DATA_PARTITION_FUS_UPDATER}
@@ -675,13 +688,27 @@ create_fsupdate_template () {
 create_update_images () {
     # create fsupdate template
     create_fsupdate_template
-    # create fsupdate images for emmc boot device
-    if [[ "${IMAGE_FSTYPES}" == *"ubifs"* ]]; then
-        create_fsupdate app fw common nand
-    fi
-    # create fsupdate images for nand boot device
-    if [[ "${IMAGE_FSTYPES}" =~ wic.gz|wic ]]; then
-        create_fsupdate app fw common emmc
+    # container mode emits an app-only and a combined (common) update alongside the
+    # firmware update; rootfs mode has no separate app artifact, so only the
+    # firmware update is produced (the app ships inside the rootfs/firmware).
+    if [ "${FUS_APPLICATION_DEPLOY_MODE}" = "rootfs" ]; then
+        # create fsupdate images for nand boot device
+        if [[ "${IMAGE_FSTYPES}" == *"ubifs"* ]]; then
+            create_fsupdate fw "" "" nand
+        fi
+        # create fsupdate images for emmc boot device
+        if [[ "${IMAGE_FSTYPES}" =~ wic.gz|wic ]]; then
+            create_fsupdate fw "" "" emmc
+        fi
+    else
+        # create fsupdate images for nand boot device
+        if [[ "${IMAGE_FSTYPES}" == *"ubifs"* ]]; then
+            create_fsupdate app fw common nand
+        fi
+        # create fsupdate images for emmc boot device
+        if [[ "${IMAGE_FSTYPES}" =~ wic.gz|wic ]]; then
+            create_fsupdate app fw common emmc
+        fi
     fi
 }
 
@@ -689,7 +716,9 @@ IMAGE_POSTPROCESS_COMMAND += "create_update_images; "
 
 do_image_update_package[depends] += "mtd-utils-native:do_populate_sysroot"
 do_image_update_package[depends] += "squashfs-tools-native:do_populate_sysroot"
-do_image_update_package[depends] += "application-container-native:do_populate_sysroot"
+# package_app (from application-container-native) is only needed to build/sign the
+# app container in container mode; rootfs mode does not create a container.
+do_image_update_package[depends] += "${@'application-container-native:do_populate_sysroot' if d.getVar('FUS_APPLICATION_DEPLOY_MODE') == 'container' else ''}"
 
 do_create_update_package[depends] += "openssl-native:do_populate_sysroot"
 

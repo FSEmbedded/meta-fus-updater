@@ -7,10 +7,12 @@ APPLICATION_DEPLOY_DIR ?= "${DEPLOY_DIR_IMAGE}/app"
 
 # Application deployment mode:
 #   "container" (default) - app is built as a signed squashfs in the data
-#                           partition (app_a/b.squashfs), OTA-updatable.
-#   "rootfs"              - app baked into the rootfs image (no data-partition
-#                           container; app updated only via full firmware update).
-#                           NOTE: not yet implemented (planned).
+#                           partition (app_a/b.squashfs), OTA-updatable on its own.
+#   "rootfs"              - app ships inside the rootfs image (no data-partition
+#                           container; app updated only via a full firmware/rootfs
+#                           update). The framework skips all container/app-OTA
+#                           machinery in this mode; a consumer recipe must install
+#                           the app payload into the rootfs.
 FUS_APPLICATION_DEPLOY_MODE ?= "container"
 
 # Variables for firmware image creation
