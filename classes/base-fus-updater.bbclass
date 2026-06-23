@@ -53,7 +53,7 @@ do_create_application_image() {
 
     # Determine certificate paths
     local build_variant="${FUS_BUILD_VARIANT}"
-    local cert_base="${LAYER_BASE_DIR}/certs/${build_variant}/app"
+    local cert_base="${CERT_BASE_DIR}/${build_variant}/app"
     local sign_dir="${cert_base}"
     local sign_key="${sign_dir}/sign.key.pem"
     local sign_cert="${sign_dir}/sign.cert.pem"
@@ -84,7 +84,7 @@ do_create_application_image() {
     done
 
     # Verify signing cert chains to the root cert deployed as keyring on the device
-    local root_cert="${LAYER_BASE_DIR}/certs/${build_variant}/root/root.cert.pem"
+    local root_cert="${CERT_BASE_DIR}/${build_variant}/root/root.cert.pem"
     if [ ! -f "${root_cert}" ]; then
         bbfatal "Root certificate not found: ${root_cert}"
     fi
@@ -222,7 +222,7 @@ python do_create_update_package() {
 
     layer_dir = d.getVar('LAYER_BASE_DIR')
     base_rauc_dir = os.path.join(layer_dir, 'rauc')
-    base_cert_dir = os.path.join(layer_dir, 'certs', build_variant, 'system')
+    base_cert_dir = os.path.join(d.getVar('CERT_BASE_DIR'), build_variant, 'system')
     sign_dir = os.path.join(base_cert_dir)
     inter_dir = os.path.join(base_cert_dir)
 

@@ -35,3 +35,7 @@ FUS_BUILD_VARIANT ?= "dev"
 # 1 use Intermediate to create sign certificate
 # 0 use root to create sign certificate
 FUS_USE_INTERMEDIATE_CERT ?= "1"
+
+# Certificate root for signing (app + RAUC). Override to use certs from an
+# external directory outside the layer.
+CERT_BASE_DIR ??= "${LAYER_BASE_DIR}/certs"
