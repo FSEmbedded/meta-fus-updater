@@ -60,3 +60,4 @@ The layer provides additional image:
     - [Dynamic Overlay](docs/dynamic-overlay.md)
 - [Automatic Update from USB Stick](docs/automatic-update.md)
 - [Structure of Deploy Directory](docs/deployment-overview.md)
+- [Certificates and Signing](docs/certificates.md)

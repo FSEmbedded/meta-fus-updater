@@ -62,12 +62,32 @@ python do_generate_certificates() {
     if os.path.exists(keyring_file):
         if os.path.exists(config_marker):
             with open(config_marker) as f:
-                if f.read() == marker_content:
-                    bb.note(f"[cert-handler] Keyring exists and config matches, skipping generation.")
-                    return
-                else:
-                    bb.warn(f"[cert-handler] Certificate config changed, regenerating certificates.")
-                    force_regen = True
+                stored_marker = f.read()
+
+            if stored_marker == marker_content:
+                bb.note(f"[cert-handler] Keyring exists and config matches, skipping generation.")
+                return
+
+            # On prod the framework only ever reads. Regenerating would replace the
+            # root certificate, and that root is installed into every image as the
+            # trust anchor - devices already in the field would be left trusting a
+            # key nobody holds any more.
+            if variant == "prod":
+                bb.fatal(
+                    f"[cert-handler] Refusing to regenerate production certificates in {cert_dir}.\n"
+                    f"  The stored settings marker does not match this build:\n"
+                    f"    on disk:    {stored_marker!r}\n"
+                    f"    this build: {marker_content!r}\n"
+                    f"  Regenerating would replace the root certificate that every image built\n"
+                    f"  from these certs installs as its trust anchor.\n"
+                    f"  If this directory was copied from a dev tree it holds development keys:\n"
+                    f"  remove it and create production material deliberately. Do not edit the\n"
+                    f"  marker to silence this - that satisfies the check and ships the\n"
+                    f"  development root as the production trust anchor."
+                )
+
+            bb.warn(f"[cert-handler] Certificate config changed, regenerating certificates.")
+            force_regen = True
         else:
             bb.note(f"[cert-handler] Keyring already exists at {keyring_file}, skipping generation.")
             return

@@ -41,6 +41,20 @@ for arg in "$@"; do
     esac
 done
 
+# Production key material is never replaced as a side effect of running this
+# script. --force regenerates the root certificate, and that root is installed
+# into every image as its trust anchor: replacing it strands every device already
+# in the field, because nothing they trust can verify a later bundle. Creating
+# production material is a deliberate act, into a directory that does not yet
+# hold any.
+if [[ "$ENVIRONMENT" == "prod" && "$FORCE" -eq 1 ]]; then
+    echo "Error: --force is refused for --env=prod." >&2
+    echo "       It would replace the production root certificate, which every image" >&2
+    echo "       installs as its trust anchor. To start over deliberately, move the" >&2
+    echo "       existing production tree aside first." >&2
+    exit 1
+fi
+
 # Paths - match BitBake expectation: certs/env/purpose/keyring.pem
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -z "${CERT_BASE_DIR:-}" ]]; then
