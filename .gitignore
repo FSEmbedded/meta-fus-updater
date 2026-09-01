@@ -1,0 +1,3 @@
+# Generated signing material. Development certificates are created on demand and
+# are disposable; production material must never be committed at all.
+certs/
