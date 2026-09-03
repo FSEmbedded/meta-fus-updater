@@ -8,13 +8,16 @@ create following images
 - **do_create_update_package**
   - creates squashfs images of rootfs, persistent-partition,
     application image for eMMC and NAND boot device.
-  - creates rauc artifacts
+  - creates rauc artifacts, named after the image (`<IMAGE_LINK_NAME>.<name>`,
+    e.g. `<image>-<machine>.rauc_update_nand.artifact`), with an
+    unqualified compatibility symlink kept next to each
     - *rauc_update_nand.artifact* would be created if ubifs
       image type is defined
     - *rauc_update_emmc.artifact*. would be created if wic.gz or wic
       image type is defined
 - **create_update_images** task creates fsupdate images
-  for eMMC and NAND in image post process.
+  for eMMC and NAND in image post process, also named after the image with
+  an unqualified compatibility symlink kept next to each.
   They are three images types:
   - *firmware.fs* is firmware update for fs-updater cli
   - *application.fs* is application update for fs-updater cli
