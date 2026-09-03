@@ -9,6 +9,19 @@ DEPENDS = " \
     openssl-native \
 "
 
+# Recreate the historic unqualified artifact name next to the per-image one. The link
+# is relative because sstate refuses absolute symlinks pointing into TMPDIR.
+# $1 = directory, $2 = real file name, $3 = legacy name
+fsup_link_legacy_name() {
+    if [ "${FSUP_ARTIFACT_COMPAT}" != "1" ]; then
+        return 0
+    fi
+    if [ "$2" = "$3" ]; then
+        return 0
+    fi
+    ln -sfn "$2" "$1/$3"
+}
+
 remove_fw_env_config() {
     # create persistent conf directory
     install -d ${IMAGE_ROOTFS}${FUS_PERSISTENT_ROOT}/conf
@@ -51,9 +64,11 @@ do_create_application_image() {
         bbfatal "APPLICATION_VERSION must be set"
     fi
 
-    # Determine certificate paths
+    # Determine certificate paths. FUS_SIGN_APP_DIR is resolved at parse time so the
+    # signing material can be part of this task's hash - see the file-checksums flags
+    # at the end of this file.
     local build_variant="${FUS_BUILD_VARIANT}"
-    local cert_base="${CERT_BASE_DIR}/${build_variant}/app"
+    local cert_base="${FUS_SIGN_APP_DIR}"
     local sign_dir="${cert_base}"
     local sign_key="${sign_dir}/sign.key.pem"
     local sign_cert="${sign_dir}/sign.cert.pem"
@@ -84,7 +99,7 @@ do_create_application_image() {
     done
 
     # Verify signing cert chains to the root cert deployed as keyring on the device
-    local root_cert="${CERT_BASE_DIR}/${build_variant}/root/root.cert.pem"
+    local root_cert="${FUS_SIGN_APP_ROOT_DIR}/root.cert.pem"
     if [ ! -f "${root_cert}" ]; then
         bbfatal "Root certificate not found: ${root_cert}"
     fi
@@ -109,8 +124,16 @@ do_create_application_image() {
         bbwarn "No application files found in ${APPLICATION_DEPLOY_DIR}"
     fi
 
+    # Build the container under its unqualified name in a work directory and deploy it
+    # under the per-image name afterwards. package_app derives the name of the unsigned
+    # image by splitting the given name at its last dot, so building straight into
+    # ${FSUP_ARTIFACT_PREFIX}${APPLICATION_CONTAINER_NAME} puts the "_unsigned" marker in
+    # the middle of the name instead of at its end.
+    local APP_STAGE_DIR="${WORKDIR}/app_container"
+    rm -rf "${APP_STAGE_DIR}" && mkdir -p "${APP_STAGE_DIR}"
+
     # Define output base and validate tools
-    local OUTPUT_IMAGE_BASE="${DEPLOY_DIR_IMAGE}/${APPLICATION_CONTAINER_NAME}"
+    local OUTPUT_IMAGE_BASE="${APP_STAGE_DIR}/${APPLICATION_CONTAINER_NAME}"
     local app_version="${APPLICATION_VERSION}"
     for tool in "${STAGING_DIR_NATIVE}/usr/bin/package_app" "${STAGING_DIR_NATIVE}/usr/bin/mksquashfs"; do
         if [ ! -x "${tool}" ]; then
@@ -136,6 +159,20 @@ do_create_application_image() {
     if [ ! -f "${OUTPUT_IMAGE_BASE}_unsigned" ]; then
         bbfatal "Application image creation failed: ${OUTPUT_IMAGE_BASE}_unsigned not found"
     fi
+
+    # Deploy under the per-image name - see FSUP_ARTIFACT_PREFIX in
+    # fus-updater-defaults.bbclass.
+    install -m 0644 "${OUTPUT_IMAGE_BASE}" \
+        "${IMGDEPLOYDIR}/${FSUP_ARTIFACT_PREFIX}${APPLICATION_CONTAINER_NAME}"
+    install -m 0644 "${OUTPUT_IMAGE_BASE}_unsigned" \
+        "${IMGDEPLOYDIR}/${FSUP_ARTIFACT_PREFIX}${APPLICATION_CONTAINER_NAME}_unsigned"
+
+    fsup_link_legacy_name "${IMGDEPLOYDIR}" \
+        "${FSUP_ARTIFACT_PREFIX}${APPLICATION_CONTAINER_NAME}" \
+        "${APPLICATION_CONTAINER_NAME}"
+    fsup_link_legacy_name "${IMGDEPLOYDIR}" \
+        "${FSUP_ARTIFACT_PREFIX}${APPLICATION_CONTAINER_NAME}_unsigned" \
+        "${APPLICATION_CONTAINER_NAME}_unsigned"
 
     # Install into rootfs slots
     mkdir -p "${IMAGE_ROOTFS}${FUS_APPLICATION_DIR}"
@@ -222,7 +259,9 @@ python do_create_update_package() {
 
     layer_dir = d.getVar('LAYER_BASE_DIR')
     base_rauc_dir = os.path.join(layer_dir, 'rauc')
-    base_cert_dir = os.path.join(d.getVar('CERT_BASE_DIR'), build_variant, 'system')
+    # Resolved at parse time so the signing material can be part of this task's hash -
+    # see the file-checksums flags at the end of this file.
+    base_cert_dir = d.getVar('FUS_SIGN_SYSTEM_DIR')
     sign_dir = os.path.join(base_cert_dir)
     inter_dir = os.path.join(base_cert_dir)
 
@@ -351,16 +390,25 @@ python do_create_update_package() {
     bb.note(f"Kernel image: {rauc_img_kernel}")
     bb.note(f"Device tree: {rauc_img_dtb}")
 
+    image_fstypes = d.getVar('IMAGE_FSTYPES') or ''
+
+    # Only warn about images this configuration actually builds. On a configuration
+    # without wic in IMAGE_FSTYPES the WIC image is absent by design, and the warning
+    # said the update package was incomplete when nothing was missing.
+    checked = [(rauc_img_rootfs, "Rootfs"), (rauc_img_kernel, "Kernel"),
+               (rauc_img_dtb, "Device Tree")]
+    if 'wic' in image_fstypes:
+        checked.insert(0, (rauc_img_wic, "WIC"))
+    else:
+        bb.note(f"WIC image is not part of IMAGE_FSTYPES, not checked: {rauc_img_wic}")
+
     # Check image files existence
-    for img_path, img_type in [(rauc_img_wic, "WIC"), (rauc_img_rootfs, "Rootfs"),
-                               (rauc_img_kernel, "Kernel"), (rauc_img_dtb, "Device Tree")]:
+    for img_path, img_type in checked:
         if os.path.exists(img_path):
             file_size = os.path.getsize(img_path)
             bb.note(f"✓ {img_type} image exists ({file_size} bytes): {img_path}")
         else:
             bb.warn(f"✗ {img_type} image missing: {img_path}")
-
-    image_fstypes = d.getVar('IMAGE_FSTYPES') or ''
     bb.note(f"Image fstypes: {image_fstypes}")
     bb.note("=== End Certificate Debug Information ===")
 
@@ -371,6 +419,45 @@ python do_create_update_package() {
         bb.note("Creating RAUC update for eMMC...")
         create_rauc_update_mmc(d)
 }
+
+def fsup_link_legacy(d, directory, real_name, legacy_name):
+    """Recreate the historic unqualified artifact name as a relative symlink.
+
+    Relative because sstate refuses absolute symlinks pointing into TMPDIR. The link
+    belongs to whichever image was deployed last, so it means "installed last", not
+    "built last".
+    """
+    import os
+
+    if d.getVar('FSUP_ARTIFACT_COMPAT') != '1' or real_name == legacy_name:
+        return
+    link = os.path.join(directory, legacy_name)
+    if os.path.lexists(link):
+        os.remove(link)
+    os.symlink(real_name, link)
+
+
+def fsup_stamp_bundle_version(d, staging_dir):
+    """Fill the version placeholder in the bundle manifest.
+
+    compatible= is compared against the device's system.conf and must stay as it is; the
+    version is what tells one product image's bundle from another's when inspecting it.
+    """
+    import os
+    import bb
+
+    manifest = os.path.join(staging_dir, 'manifest.raucm')
+    if not os.path.exists(manifest):
+        bb.warn(f"manifest.raucm missing in template, cannot set the bundle version: {manifest}")
+        return
+
+    version = "%s-%s" % (d.getVar('IMAGE_BASENAME'), d.getVar('FIRMWARE_VERSION'))
+    with open(manifest, 'r+') as f:
+        content = f.read().replace('${bundle_version}', version)
+        f.seek(0)
+        f.write(content)
+        f.truncate()
+
 
 def create_rauc_update_mmc(d):
     import os
@@ -406,9 +493,12 @@ def create_rauc_update_mmc(d):
     wic_img = d.getVar('RAUC_IMG_WIC')
     rootfs_img = d.getVar('RAUC_IMG_ROOTFS')
     template = d.getVar('RAUC_TEMPLATE_EMMC')
-    deploy_dir = d.getVar('DEPLOY_DIR_IMAGE')
+    imgdeploydir = d.getVar('IMGDEPLOYDIR')
+    prefix = d.getVar('FSUP_ARTIFACT_PREFIX') or ''
 
-    out_dir = os.path.join(deploy_dir, 'rauc_update_mmc')
+    # Staging below WORKDIR. It used to sit in the shared deploy directory, where the
+    # rmtree below removed the staging tree of any image running at the same time.
+    out_dir = os.path.join(d.getVar('WORKDIR'), 'rauc_update_mmc')
 
     # Validate certificates have codeSigning extendedKeyUsage
     check_cert_for_codesign(cert, require_digital_signature=True)
@@ -455,7 +545,10 @@ def create_rauc_update_mmc(d):
 
     shutil.copyfile(rootfs_img, os.path.join(out_dir, 'rootfs.squashfs'))
 
-    artifact = os.path.join(deploy_dir, 'rauc_update_emmc.artifact')
+    fsup_stamp_bundle_version(d, out_dir)
+
+    artifact_name = f"{prefix}rauc_update_emmc.artifact"
+    artifact = os.path.join(imgdeploydir, artifact_name)
     if os.path.isfile(artifact):
         os.remove(artifact)
 
@@ -469,6 +562,8 @@ def create_rauc_update_mmc(d):
     r = sp.run(cmd, capture_output=True)
     if r.returncode != 0:
         bb.fatal(f"RAUC bundle eMMC failed: {r.stderr.decode().strip()}")
+
+    fsup_link_legacy(d, imgdeploydir, artifact_name, 'rauc_update_emmc.artifact')
 
     shutil.rmtree(out_dir)
 
@@ -491,14 +586,16 @@ def create_rauc_update_nand(d):
     rootfs = d.getVar('RAUC_IMG_ROOTFS')
     dtb = d.getVar('RAUC_IMG_DEVICE_TREE')
     kernel = d.getVar('RAUC_IMG_KERNEL')
-    deploy = d.getVar('DEPLOY_DIR_IMAGE')
+    imgdeploydir = d.getVar('IMGDEPLOYDIR')
+    prefix = d.getVar('FSUP_ARTIFACT_PREFIX') or ''
 
     # Verify input files exist
     for path, label in [(rootfs, "rootfs"), (dtb, "device tree"), (kernel, "kernel"), (template, "template dir")]:
         if not os.path.exists(path):
             bb.fatal(f"{label} file not found at: {path}")
 
-    out = os.path.join(deploy, 'rauc_update_nand')
+    # Staging below WORKDIR - see the note in create_rauc_update_mmc.
+    out = os.path.join(d.getVar('WORKDIR'), 'rauc_update_nand')
     shutil.rmtree(out, ignore_errors=True)
     pathlib.Path(out).mkdir(parents=True)
 
@@ -528,7 +625,10 @@ def create_rauc_update_nand(d):
             f.write(content)
             f.truncate()
 
-    artifact = os.path.join(deploy, 'rauc_update_nand.artifact')
+    fsup_stamp_bundle_version(d, out)
+
+    artifact_name = f"{prefix}rauc_update_nand.artifact"
+    artifact = os.path.join(imgdeploydir, artifact_name)
 
     # Remove existing artifact file, if present
     if os.path.isfile(artifact):
@@ -546,6 +646,8 @@ def create_rauc_update_nand(d):
     if r.returncode != 0:
         bb.fatal(f"RAUC bundle NAND failed: {r.stderr.decode().strip()}")
 
+    fsup_link_legacy(d, imgdeploydir, artifact_name, 'rauc_update_nand.artifact')
+
     shutil.rmtree(out)
 
 
@@ -557,8 +659,10 @@ create_fsupdate () {
     local update_description_file=fsupdate-common.json
     local prov_service_dir_name="${FS_PROVISIONING_SERVICE_DIR_NAME}"
     local fsup_image_dir_name="${FSUP_IMAGE_DIR_NAME}"
-    local fsup_images_dir=${DEPLOY_DIR_IMAGE}/${fsup_image_dir_name}
-    local fsup_images_work_dir=${fsup_images_dir}/.work
+    local fsup_images_dir=${IMGDEPLOYDIR}/${fsup_image_dir_name}
+    # Staging below WORKDIR. It used to live inside the shared deploy directory, where
+    # the rm -rf below removed the staging tree of any image running at the same time.
+    local fsup_images_work_dir=${WORKDIR}/${fsup_image_dir_name}.work
     local prov_service_home=${DEPLOY_DIR_IMAGE}/${prov_service_dir_name}
     local update_desc_file=${fsup_images_work_dir}/${update_description_file}
     local update_name=""
@@ -601,13 +705,13 @@ create_fsupdate () {
         # create binaries directory with update images
         mkdir -p ${fsup_images_work_dir}
         # create update
-        cp -f ${DEPLOY_DIR_IMAGE}/${UPDATE_FILE_NAME} ${fsup_images_work_dir}/${target}
+        cp -f ${IMGDEPLOYDIR}/${FSUP_ARTIFACT_PREFIX}${UPDATE_FILE_NAME} ${fsup_images_work_dir}/${target}
         # calculate sha256 sum
         update_sha256sum=$(sha256sum -- "${fsup_images_work_dir}/${target}" | awk '{print $1}')
 
         if [ ! -f "${update_desc_file}" ]; then
-            # copy fsupdate-template.json
-            cp -f ${DEPLOY_DIR_IMAGE}/fsupdate-template.json ${update_desc_file}
+            # copy the update description template
+            cp -f ${IMGDEPLOYDIR}/${FSUP_ARTIFACT_PREFIX}${FSUP_TEMPLATE_FILE_NAME} ${update_desc_file}
         fi
         #
         sed -i "s|<${fsupdate_type}_update_description>|\"FUS ${update_name} Update\"|g" "${update_desc_file}"
@@ -621,22 +725,28 @@ create_fsupdate () {
         # remove firmware/application update block
         sed -i "$remove_block" ${fsup_images_work_dir}/fsupdate.json
 
+        mkdir -p ${fsup_images_dir}
         cd ${fsup_images_work_dir}
         ${FAKEROOTCMD} tar cfvj ${target_archiv_name}.tar.bz2 --numeric-owner fsupdate.json $target
         # use addfsheader script from native package
         ${FAKEROOTCMD} addfsheader.sh -t CERT ${fsup_images_work_dir}/${target_archiv_name}.tar.bz2 > \
-            ${fsup_images_dir}/${target_archiv_name}.fs
+            ${fsup_images_dir}/${FSUP_ARTIFACT_PREFIX}${target_archiv_name}.fs
+        fsup_link_legacy_name "${fsup_images_dir}" \
+            "${FSUP_ARTIFACT_PREFIX}${target_archiv_name}.fs" "${target_archiv_name}.fs"
         rm -f ${fsup_images_work_dir}/fsupdate.json
     done
 
     if [ "$3" = "common" ]; then
         # check param 3 for combinded update
         cp -f ${update_desc_file} ${fsup_images_work_dir}/fsupdate.json
+        mkdir -p ${fsup_images_dir}
         cd ${fsup_images_work_dir}
         ${FAKEROOTCMD} tar cfvj update_${4}.tar.bz2 --numeric-owner fsupdate.json update.app update.fw
         # use addfsheader script from native package
         ${FAKEROOTCMD} addfsheader.sh -t CERT ${fsup_images_work_dir}/update_${4}.tar.bz2 > \
-            ${fsup_images_dir}/update_${4}.fs
+            ${fsup_images_dir}/${FSUP_ARTIFACT_PREFIX}update_${4}.fs
+        fsup_link_legacy_name "${fsup_images_dir}" \
+            "${FSUP_ARTIFACT_PREFIX}update_${4}.fs" "update_${4}.fs"
     fi
 
     if [ -f "update.app" ]; then
@@ -649,7 +759,7 @@ create_fsupdate () {
 }
 
 create_fsupdate_template () {
-    local fsupdate_template_filename="${DEPLOY_DIR_IMAGE}/${FSUP_TEMPLATE_FILE_NAME}"
+    local fsupdate_template_filename="${IMGDEPLOYDIR}/${FSUP_ARTIFACT_PREFIX}${FSUP_TEMPLATE_FILE_NAME}"
 
     if [ ! -f "${fsupdate_template_filename}" ]; then
         # create json template content
@@ -682,6 +792,9 @@ create_fsupdate_template () {
         # write the content into the template file
         echo "${json_content}" > ${fsupdate_template_filename}
     fi
+
+    fsup_link_legacy_name "${IMGDEPLOYDIR}" \
+        "${FSUP_ARTIFACT_PREFIX}${FSUP_TEMPLATE_FILE_NAME}" "${FSUP_TEMPLATE_FILE_NAME}"
 }
 
 # create update images
@@ -729,16 +842,31 @@ do_image_wic[depends] += "python3-pyparted-native:do_populate_sysroot"
 
 ROOTFS_POSTPROCESS_COMMAND:append = "remove_fw_env_config; "
 
-do_fsup_image_clean () {
-    # remove fsupdate directory with all images
-    rm -rf "${DEPLOY_DIR_IMAGE}/${FSUP_IMAGE_DIR_NAME}"
-    # remove fsupdate template
-    rm -rf "${DEPLOY_DIR_IMAGE}/${FSUP_TEMPLATE_FILE_NAME}"
-}
+# There used to be a do_fsup_image_clean here that removed the shared update directory
+# and the description template on clean - which took every other image's artifacts with
+# it. Both now go through IMGDEPLOYDIR, so a clean removes this recipe's own entries via
+# the sstate manifest and nothing else.
 
-do_clean:append () {
-    # call fsup_certs_clean function
-    bb.build.exec_func('do_fsup_image_clean', d)
-}
+# The signing material is not part of any hash bitbake computes today: the paths come
+# from configuration and only the file content decides whether an artifact is valid.
+# Without these a regenerated certificate leaves a valid stamp behind, and the artifacts
+# signed with the previous one stay in place.
+def fsup_sign_file_checksums(d, purpose):
+    import os
+
+    if purpose == 'app':
+        if d.getVar('FUS_APPLICATION_DEPLOY_MODE') != 'container':
+            return ''
+        base = d.getVar('FUS_SIGN_APP_DIR')
+    else:
+        base = d.getVar('FUS_SIGN_SYSTEM_DIR')
+
+    names = ['sign.key.pem', 'sign.cert.pem']
+    if d.getVar('FUS_USE_INTERMEDIATE_CERT') == '1':
+        names.append('inter.cert.pem')
+    return ' '.join('%s:True' % os.path.join(base, n) for n in names)
+
+do_create_update_package[file-checksums] += "${@fsup_sign_file_checksums(d, 'system')}"
+do_image_update_package[file-checksums] += "${@fsup_sign_file_checksums(d, 'app')}"
 
 DISTRO_FEATURES += " rauc"

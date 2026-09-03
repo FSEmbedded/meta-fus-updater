@@ -31,3 +31,25 @@ SQUASHFS_COMPRESSOR ?= "zstd"
 # set additional flags, must be suitable to compression method
 # used in wic configuration too to set --mkfs-extraopts
 SQUASHFS_EXTRA_IMAGECMD ?= "-comp ${SQUASHFS_COMPRESSOR} -Xcompression-level 19"
+
+# Update artifacts are named per image and deployed through IMGDEPLOYDIR. They used to be
+# written under fixed names straight into the shared deploy directory, so several images
+# built into it overwrote each other silently - and because that bypassed sstate, the
+# overlap check that exists for exactly this never saw them.
+FSUP_ARTIFACT_PREFIX ?= "${IMAGE_LINK_NAME}."
+
+# Keep the historic unqualified names as symlinks. They point at whichever image was
+# deployed last, so they mean "installed last", not "built last". Set to "0" to deploy
+# only the per-image names.
+FSUP_ARTIFACT_COMPAT ?= "1"
+
+# Signing material, resolved here rather than inside the task bodies so the paths can be
+# put into the task hashes (see the file-checksums flags in base-fus-updater.bbclass).
+FUS_SIGN_SYSTEM_DIR ?= "${CERT_BASE_DIR}/${FUS_BUILD_VARIANT}/system"
+FUS_SIGN_APP_DIR ?= "${CERT_BASE_DIR}/${FUS_BUILD_VARIANT}/app"
+
+# The root the application signing cert is checked against. It has its own variable so
+# that pointing FUS_SIGN_APP_DIR at another cert store moves the root with it: checking a
+# rotated signing cert against a root left behind elsewhere either fails the build for no
+# reason or passes on a root that is no longer the one deployed to the device.
+FUS_SIGN_APP_ROOT_DIR ?= "${CERT_BASE_DIR}/${FUS_BUILD_VARIANT}/root"
