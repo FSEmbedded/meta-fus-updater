@@ -32,6 +32,14 @@ SQUASHFS_COMPRESSOR ?= "zstd"
 # used in wic configuration too to set --mkfs-extraopts
 SQUASHFS_EXTRA_IMAGECMD ?= "-comp ${SQUASHFS_COMPRESSOR} -Xcompression-level 19"
 
+# Hand the same flags to the stock squashfs image type. The wic path reads
+# SQUASHFS_EXTRA_IMAGECMD directly, but a squashfs entry in IMAGE_FSTYPES goes through
+# IMAGE_CMD:squashfs, which expands EXTRA_IMAGECMD - unset, so those images silently fell
+# back to the default compressor and carried whatever the flags were meant to exclude.
+# Type-scoped so it cannot reach the ubifs/ext4/wic commands, and weak so an image or
+# machine can still override it.
+EXTRA_IMAGECMD:squashfs ?= "${SQUASHFS_EXTRA_IMAGECMD}"
+
 # Update artifacts are named per image and deployed through IMGDEPLOYDIR. They used to be
 # written under fixed names straight into the shared deploy directory, so several images
 # built into it overwrote each other silently - and because that bypassed sstate, the
