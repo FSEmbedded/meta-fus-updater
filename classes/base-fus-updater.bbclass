@@ -825,7 +825,7 @@ create_update_images () {
     fi
 }
 
-IMAGE_POSTPROCESS_COMMAND += "create_update_images; "
+IMAGE_POSTPROCESS_COMMAND += "create_update_images"
 
 do_image_update_package[depends] += "mtd-utils-native:do_populate_sysroot"
 do_image_update_package[depends] += "squashfs-tools-native:do_populate_sysroot"
@@ -840,7 +840,7 @@ do_image_wic[depends] += "squashfs-tools-native:do_populate_sysroot"
 do_image_wic[depends] += "mtd-utils-native:do_populate_sysroot"
 do_image_wic[depends] += "python3-pyparted-native:do_populate_sysroot"
 
-ROOTFS_POSTPROCESS_COMMAND:append = "remove_fw_env_config; "
+ROOTFS_POSTPROCESS_COMMAND:append = " remove_fw_env_config"
 
 # There used to be a do_fsup_image_clean here that removed the shared update directory
 # and the description template on clean - which took every other image's artifacts with
