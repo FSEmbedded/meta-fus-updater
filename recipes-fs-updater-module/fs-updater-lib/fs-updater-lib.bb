@@ -8,16 +8,16 @@ SECTION = "libs"
 
 inherit cmake pkgconfig
 
-SRCREV ?= "d7217cfc548e9ff29d3ce56cf18b778c62fc5214"
+SRCREV ?= "bc3a139c129f6996bcb70ca44c451def9b854a64"
 FSUPLIB_SRC_URI ?= "git://github.com/FSEmbedded/fs-updater-lib.git"
-FSUPLIB_GIT_BRANCH ?= "master"
+FSUPLIB_GIT_BRANCH ?= "release/legacy-v1.1"
 
 SRC_URI = " \
     ${FSUPLIB_SRC_URI};protocol=https;branch=${FSUPLIB_GIT_BRANCH} \
     "
 
 S = "${WORKDIR}/git"
-PV = "1.1.0+git${SRCPV}"
+PV = "1.1.2+git${SRCPV}"
 
 DEPENDS = " \
     libubootenv \
