@@ -3,7 +3,7 @@
 The firmware, application or common update can be installed from a USB stick or an SD card.
 **udev** is used to detect the update device.
 
-The selected drive must have the label **FUS-UPDATER**. The update files are declared
+The selected drive must have a partition with the label **FUS-UPDATER**. The update files are declared
 in a mandatory environment description.
 
 The file ***update_config*** must be available and supports the following variables:
@@ -17,12 +17,14 @@ SCAN_FOR_UPDATE=yes          # optional; scan for an update file if UPDATE_FILE 
 Possible images are *firmware_&lt;dev&gt;.fs*, *application.fs* or *update_&lt;dev&gt;.fs*, where &lt;dev&gt; is *emmc* or *nand*.
 
 After a successful installation the script initiates a reboot by executing
-`fs-updater --apply_update`. On the next boot the mark-good service automatically
-calls `fs-updater --commit_update` once the update is confirmed healthy.
+`fs-updater --apply_update`. After the reboot the update must be committed
+explicitly with `fs-updater --commit_update`, e.g. by the application once it
+runs correctly. The mark-good service does not do this: it is skipped while an
+update is pending.
 
 ### How it works
 
-1. The udev rule detects a block device with label **FUS-UPDATER** and triggers
+1. The udev rule detects a partition with the label **FUS-UPDATER** and triggers
    `fus-usb-update@.service`, which starts `/usr/libexec/usb_fs_updater.sh`.
 2. The script checks `fs-updater --update_reboot_state`. If the state machine is
    not idle (exit code ≠ 27 / `NO_UPDATE_REBOOT_PENDING`), the update is skipped

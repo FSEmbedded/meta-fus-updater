@@ -14,11 +14,11 @@ In general, the tool arguments are classified into three groups:
 | CLI argument | Type | Description |
 |---|---|---|
 | `--update_file` | string | Initiates update process and installs update image. Expects absolute path to the image. (generic) |
-| `--update_type` | string | Force update type: `"fw"` or `"app"`. Optional — auto-detected from fsupdate.json if omitted. (generic) |
+| `--update_type` | string | Only for a bare update image (RAUC artifact or application image): `"fw"` or `"app"`. Omit it for `.fs` containers; their type is read from fsupdate.json. (generic) |
 | `--commit_update` | switch | Commit pending update after successful reboot. (generic) |
-| `--rollback_update` | switch | Rollback the last installed update. Must be used before commit. (local) |
-| `--switch_fw_slot` | switch | Switch to next stable firmware slot. Requires `--apply_update`. (local) |
-| `--switch_app_slot` | switch | Switch to next stable application slot. Requires `--apply_update`. (local) |
+| `--rollback_update` | switch | Rollback the last installed update. Allowed after the reboot into the update and before commit. (local) |
+| `--switch_fw_slot` | switch | Switch to next stable firmware slot. Run `--apply_update` as a separate call afterwards. (local) |
+| `--switch_app_slot` | switch | Switch to next stable application slot. Run `--apply_update` as a separate call afterwards. (local) |
 | `--apply_update` | switch | Apply pending update/rollback/switch and initiate reboot. (generic) |
 | `--update_reboot_state` | switch | Print current update state from U-Boot environment. (generic) |
 | `--firmware_version` | switch | Print current firmware version. (generic) |
@@ -43,10 +43,9 @@ Each CLI operation returns a numeric exit code. Codes are grouped by operation t
 
 | Range | Operation | Codes |
 |-------|-----------|-------|
-| 0-3 | Firmware update | 0=success, 1=progress error, 2=internal error, 3=system error |
-| 4-7 | Application update | 4=success, 5=progress error, 6=internal error, 7=system error |
-| 8-11 | Combined (FW+APP) update | 8=success, 9=progress error, 10=internal error, 11=system error |
-| 12-15 | Rollback | 12=success, 13=progress error, 14=internal error, 15=system error |
+| 0, 4, 8 | Update installed | 0=firmware, 4=application, 8=firmware and application |
+| 9-11 | Update failed (every update type) | 9=progress error, 10=internal error, 11=system error |
+| 12-15 | Rollback / slot switch | 12=success, 13=progress error, 14=internal error, 15=system error |
 | 16-19 | Commit | 16=committed, 17=not needed, 18=invalid U-Boot state, 19=system error |
 | 20-33 | Reboot state query | Maps `update_reboot_state` enum to exit code (20-33) |
 | 34-37 | Update available (Azure) | 34=none, 35=FW, 36=APP, 37=FW+APP |
@@ -54,7 +53,7 @@ Each CLI operation returns a numeric exit code. Codes are grouped by operation t
 | 42-45 | Download progress (Azure) | 42=not started, 43=waiting, 44=in progress, 45=finished |
 | 46-49 | Install (Azure) | 46=no queue, 47=in progress, 48=finished, 49=failed |
 | 50-51 | Apply | 50=success, 51=failed |
-| 52-54 | Get/set state | 52=success, 53=wrong parameter, 54=state is bad |
+| 52-54 | Get/set state | 52=success, 53=wrong parameter, 54=state is bad (also: switch refused, target slot is bad) |
 | 60-65 | Argument validation | 60=invalid update type, 61=update file not found, 62=environment variable `UPDATE_STICK` not set, 63=environment variable `UPDATE_FILE` not set, 64=`--update_type` without `--update_file`, 65=incompatible argument combination |
 | 70 | Reboot | 70=reboot failed |
 | 75 | Commit | 75=committed, switch not taken: the running slot stays |
@@ -75,7 +74,7 @@ The CLI detects the update type from an additional configuration file, which
 must be part of the update image.
 With `FUS_APPLICATION_DEPLOY_MODE = "rootfs"` the build creates only the firmware update.
 
-The update description is based on JSON. For example, **base-fus-updater.bbclass** generates the update description from the *fsupdate.json* template.
+The update description is based on JSON. For example, **base-fus-updater.bbclass** generates the update description from the *fsupdate-template.json* template.
 
 ```text
 {
@@ -87,7 +86,7 @@ The update description is based on JSON. For example, **base-fus-updater.bbclass
                 "description": <fw_update_description>,
                 "version": <fw_version>,
                 "handler": <fw_handler>,
-                "file": "update.fw",
+                "file": <fw_name>,
                 "hashes": {
                     "sha256": <fw_sha_hash>
                 }
@@ -96,7 +95,7 @@ The update description is based on JSON. For example, **base-fus-updater.bbclass
                 "description": <app_update_description>,
                 "version": <app_version>,
                 "handler": <app_handler>,
-                "file": "update.app",
+                "file": <app_name>,
                 "hashes": {
                     "sha256": <app_sha_hash>
                 }

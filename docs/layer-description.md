@@ -10,9 +10,8 @@ The images are created during the image tasks:
     partition from the wks file) and, in container mode, the SquashFS
     application image.
 - the **do_create_update_package** task
-  - creates RAUC artifacts, named after the image (`<IMAGE_LINK_NAME>.<name>`,
-    e.g. `<image>-<machine>.rauc_update_nand.artifact`), with an
-    unqualified compatibility symlink kept next to each
+  - creates RAUC artifacts, named after the image (`<IMAGE_LINK_NAME>.<name>`),
+    with an unqualified compatibility symlink kept next to each
     - *rauc_update_nand.artifact* is created if the ubifs
       image type is defined
     - *rauc_update_emmc.artifact* is created if the wic.gz or wic
@@ -59,7 +58,7 @@ Example recipes for the application:
 ### recipes-auto-usb-update/*
 
 Installs the udev rules for automatic firmware, application or common updates
-with a USB drive or SD card. The stick or SD card must have the label **FUS-UPDATER**.
+with a USB drive or SD card. The stick or SD card must have a partition with the label **FUS-UPDATER**.
 The stick contains all files and an **update_config**,
 which describes the update file, see [automatic-update.md](automatic-update.md).
 
@@ -75,7 +74,9 @@ Both recipes fetch their sources from git.
 ### recipes-rauc-core/*
 
 Adaptations for the RAUC update process.
-- *rauc_%.bbappend* adds the mark-good service for the FSUP framework
+- *rauc_%.bbappend* installs its own mark-good service, which calls
+  `fs-updater --commit_update`; *check-fsup-state.sh* skips it while an
+  update is pending, so an installed update must be committed explicitly
 
 ### recipes-bsp/*
 

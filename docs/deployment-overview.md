@@ -12,12 +12,12 @@ The framework offers configurations for two boot device types:
 
 > Note: Currently only eMMC boot device is supported.
 
-The binaries can be found in the *&lt;build-dir&gt;/tmp/deploy/images/&lt;architecture&gt;/* directory:
+The binaries can be found in the *&lt;build-dir&gt;/tmp/deploy/images/&lt;machine&gt;/* directory:
 - for eMMC - *&lt;IMAGE_LINK_NAME&gt;.rauc_update_emmc.artifact*
 - for NAND - *&lt;IMAGE_LINK_NAME&gt;.rauc_update_nand.artifact*
 
-> Note: Artifact names are prefixed with the image name (`IMAGE_LINK_NAME`, which
-> carries the machine suffix, e.g. `<image>-<machine>`) because several product images
+> Note: Artifact names are prefixed with the image name (`IMAGE_LINK_NAME`, e.g.
+> `fus-image-update-std-<machine>-update`) because several product images
 > share the same deploy directory; without the prefix, the last image built would
 > silently overwrite the others' artifacts. Unqualified compatibility symlinks (e.g.
 > *rauc_update_emmc.artifact*) are also created next to the real files unless
@@ -31,7 +31,7 @@ The binaries can be found in the *&lt;build-dir&gt;/tmp/deploy/images/&lt;archit
 
 The fs-updater CLI supports three update image types: *application*,
 *firmware* and *common*. The build process creates these images and copies them to the
-*&lt;build-dir&gt;/tmp/deploy/images/&lt;architecture&gt;/fsup-framework-bin* directory.
+*&lt;build-dir&gt;/tmp/deploy/images/&lt;machine&gt;/fsup-framework-bin* directory.
 
 - `firmware_<dev>.fs` is a tar.bz2 archive behind an F&S header
   - update.fw - RAUC image
@@ -44,7 +44,8 @@ The fs-updater CLI supports three update image types: *application*,
   - update.app - SquashFS image with all application artifacts
   - fsupdate.json - update description
 
-Here `<dev>` is `emmc` or `nand`.
+Here `<dev>` is `emmc` or `nand`. As with the RAUC artifacts, each file is created
+as `<IMAGE_LINK_NAME>.<name>` with an unqualified compatibility symlink.
 
 > Note: With `FUS_APPLICATION_DEPLOY_MODE = "rootfs"` (default: `container`), the
 > application is part of the rootfs and only `firmware_<dev>.fs` is created.
