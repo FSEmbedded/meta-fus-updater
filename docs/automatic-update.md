@@ -10,8 +10,8 @@ The file ***update_config*** must be available and supports the following variab
 
 ```shell
 UPDATE_FILE=<update image name>
-UPDATE_TYPE=<fw|app>         # optional; auto-detected from fsupdate.json if omitted
-SCAN_FOR_UPDATE=yes          # optional; scan for *.fs/*.fw/*.app if UPDATE_FILE not set
+UPDATE_TYPE=<fw|app>         # optional; with SCAN_FOR_UPDATE, scan for *.fw/*.app instead of *.fs
+SCAN_FOR_UPDATE=yes          # optional; scan for an update file if UPDATE_FILE is not set or not found
 ```
 
 Possible images are *firmware_&lt;dev&gt;.fs*, *application.fs* or *update_&lt;dev&gt;.fs*, where &lt;dev&gt; is *emmc* or *nand*.

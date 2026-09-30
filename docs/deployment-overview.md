@@ -31,15 +31,20 @@ The binaries can be found in the *&lt;build-dir&gt;/tmp/deploy/images/&lt;archit
 
 The fs-updater CLI supports three update image types: *application*,
 *firmware* and *common*. The build process creates these images and copies them to the
-*&lt;build-dir&gt;/tmp/deploy/images/&lt;architecture&gt;/fsup-framework-bin* directory, where `<dev>` is `emmc` or `nand`.
+*&lt;build-dir&gt;/tmp/deploy/images/&lt;architecture&gt;/fsup-framework-bin* directory.
 
-- `firmware_<dev>.fs` is a tar.bz2 archive
+- `firmware_<dev>.fs` is a tar.bz2 archive behind an F&S header
   - update.fw - RAUC image
   - fsupdate.json - update description
-- `application.fs` is a tar.bz2 archive
+- `application.fs` is a tar.bz2 archive behind an F&S header
   - update.app - SquashFS image with all application artifacts
   - fsupdate.json - update description
-- `update_<dev>.fs` is a tar.bz2 archive
+- `update_<dev>.fs` is a tar.bz2 archive behind an F&S header
   - update.fw - RAUC image
   - update.app - SquashFS image with all application artifacts
   - fsupdate.json - update description
+
+Here `<dev>` is `emmc` or `nand`.
+
+> Note: With `FUS_APPLICATION_DEPLOY_MODE = "rootfs"` (default: `container`), the
+> application is part of the rootfs and only `firmware_<dev>.fs` is created.

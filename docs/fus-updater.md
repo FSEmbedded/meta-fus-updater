@@ -73,6 +73,7 @@ Each update type can be installed locally with the command
 
 The CLI detects the update type from an additional configuration file, which
 must be part of the update image.
+With `FUS_APPLICATION_DEPLOY_MODE = "rootfs"` the build creates only the firmware update.
 
 The update description is based on JSON. For example, **base-fus-updater.bbclass** generates the update description from the *fsupdate.json* template.
 
