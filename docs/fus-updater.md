@@ -55,6 +55,10 @@ Each CLI operation returns a numeric exit code. Codes are grouped by operation t
 | 46-49 | Install (Azure) | 46=no queue, 47=in progress, 48=finished, 49=failed |
 | 50-51 | Apply | 50=success, 51=failed |
 | 52-54 | Get/set state | 52=success, 53=wrong parameter, 54=state is bad |
+| 60-65 | Argument validation | 60=invalid update type, 61=update file not found, 62=environment variable `UPDATE_STICK` not set, 63=environment variable `UPDATE_FILE` not set, 64=`--update_type` without `--update_file`, 65=incompatible argument combination |
+| 70 | Reboot | 70=reboot failed |
+| 75 | Commit | 75=committed, switch not taken: the running slot stays |
+| 124 | Fatal | 124=unhandled exception |
 
 ## Update Types
 
