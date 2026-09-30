@@ -7,7 +7,7 @@ root under *&lt;CERT_BASE_DIR&gt;/&lt;variant&gt;/root/*.
 A layer that integrates this framework does not have to implement anything for
 this. It sets the definitions below and gets the guarantee that follows.
 
-#### Enabled definitions:
+### Definitions
 - **CERT_BASE_DIR** sets the directory holding the certificate tree.
   Default value is *${LAYER_BASE_DIR}/certs*. Override it in the machine or distro
   configuration to keep certificates outside the layer; production material in

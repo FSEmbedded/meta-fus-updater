@@ -1,10 +1,10 @@
 ## F&S Updater CLI
 
-One core component of F&S update framework is the command line interface (CLI).
+One core component of the F&S update framework is the command line interface (CLI).
 The tool integrates the RAUC firmware, F&S application and Azure Cloud support.
-This allows the user uniform calls for different update types.
+This gives the user uniform calls for different update types.
 
-In general the tool arguments are classified in 3 groups:
+In general, the tool arguments are classified into three groups:
 - **local usage** - local update process on the board
 - **generic usage** - for local and Azure process
 - **Azure Cloud** - update process with Azure Cloud
@@ -63,20 +63,20 @@ Each CLI operation returns a numeric exit code. Codes are grouped by operation t
 ## Update Types
 
 There are three types of updates implemented:
-- *firmware update* - inherits kernel, device tree and rootfs
-- *application update* - inherits application with additional artifacts 
+- *firmware update* - contains the kernel, device tree and rootfs
+- *application update* - contains the application with additional artifacts
 - *common update* - combines firmware and application
 
-Each update type can be installed locally by command
+Each update type can be installed locally with the command
 
 `fs-updater --update_file <updatefile>`
 
-The CLI detects update type by additional configuration file, which
-must be a part of update image.
+The CLI detects the update type from an additional configuration file, which
+must be part of the update image.
 
-The update description is based on json. E.g. **base-fus-updater.bbclass** generates update description from *fsupdate.json* template.
+The update description is based on JSON. For example, **base-fus-updater.bbclass** generates the update description from the *fsupdate.json* template.
 
-```json
+```text
 {
     "name": "Common F&S Update",
     "version": "1.0",
@@ -104,10 +104,11 @@ The update description is based on json. E.g. **base-fus-updater.bbclass** gener
     }
 }
 ```
+
 ### Firmware update
 
-The firmware update name is *firmware.fs*. The update consists of the RAUC
-binary image *update.fw* (*rauc_update_[emmc|nand].artifact*) and fsupdate.json description.
+The firmware update name is *firmware_&lt;dev&gt;.fs*, where &lt;dev&gt; is *emmc* or *nand*. The update consists of the RAUC
+binary image *update.fw* (*rauc_update_&lt;dev&gt;.artifact*) and the fsupdate.json description.
 
 ```json
 {
@@ -131,7 +132,7 @@ binary image *update.fw* (*rauc_update_[emmc|nand].artifact*) and fsupdate.json 
 
 ### Application update
 
-Application update name is *application.fs*. The update consists of the application squashfs container binary update.app and fsupdate.json description.
+The application update name is *application.fs*. The update consists of the application SquashFS container binary update.app and the fsupdate.json description.
 
 ```json
 {
@@ -140,7 +141,7 @@ Application update name is *application.fs*. The update consists of the applicat
     "images": {
         "updates" : [
             {
-                "description": "FUS Firmware Update",
+                "description": "FUS Application Update",
                 "version": "20241019",
                 "handler": "fus/application",
                 "file": "update.app",
@@ -155,7 +156,8 @@ Application update name is *application.fs*. The update consists of the applicat
 
 ### Common update
 
-The common update name is *update.fs*. The update consists of the firmware binary *update.fw*, application binary *update.app* and *fsupdate.json* description.
+The common update name is *update_&lt;dev&gt;.fs*. The update consists of the firmware binary *update.fw*, the application binary *update.app* and the *fsupdate.json* description.
+
 ```json
 {
     "name": "Common F&S Update",
@@ -172,7 +174,7 @@ The common update name is *update.fs*. The update consists of the firmware binar
                 }
             },
             {
-                "description": "FUS Firmware Update",
+                "description": "FUS Application Update",
                 "version": "20241019",
                 "handler": "fus/application",
                 "file": "update.app",
@@ -184,10 +186,11 @@ The common update name is *update.fs*. The update consists of the firmware binar
     }
 }
 ```
-## Recipe fs-update-module
 
-fs-updater-cli installs additional bash completion script to
-*/etc/bash_completion.d/* directory. The script name is fs_updater. The script can be started by command
+## Recipe fs-updater-cli
+
+fs-updater-cli installs an additional bash completion script to the
+*/etc/bash_completion.d/* directory. The script name is fs_updater. It can be sourced with
 `. /etc/bash_completion.d/fs_updater`.
 
-For more information see recipe implementation of package [fs-updater-cli](../recipes-fs-updater-module/fs-updater-cli/fs-updater-cli.bb)
+For more information, see the recipe of the package [fs-updater-cli](../recipes-fs-updater-module/fs-updater-cli/fs-updater-cli.bb).

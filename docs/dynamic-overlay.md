@@ -3,7 +3,7 @@
 Dynamic overlay is the part of the FSUP framework that manages the application overlay and
 the persistent memory. The command *dynamic_overlay* is started before init.
 
-The *recipes-dynamic_overlay* recipe builds the binary, which is configured to detect
+The recipe in *recipes-dynamic_overlay* builds the binary, which is configured to detect
 the persistent partition named *data*. The detection works for block devices like eMMC and MTD devices like NAND.
 
 The recipe configures the build to match the FSUP framework layout, and the configuration
