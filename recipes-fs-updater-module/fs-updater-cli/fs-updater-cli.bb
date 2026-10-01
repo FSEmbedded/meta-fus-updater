@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0-only;md5=801f80980d171d
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRCREV ?= "460445f479ee39fe3ac0db517defc6b0eeee7411"
+SRCREV ?= "d531430467a46069637cefce76a8eecd7f94e15d"
 FSUPCLI_SRC_URI ?= "git://github.com/FSEmbedded/fs-updater-cli.git"
 FSUPCLI_GIT_BRANCH ?= "release/legacy-v1.1"
 
@@ -16,7 +16,7 @@ SRC_URI = " \
 "
 
 S = "${WORKDIR}/git"
-PV = "1.1.1+git${SRCPV}"
+PV = "1.1.2+git${SRCPV}"
 
 inherit cmake pkgconfig
 

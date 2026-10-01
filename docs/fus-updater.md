@@ -27,7 +27,7 @@ In general, the tool arguments are classified into three groups:
 | `--is_fw_state_bad` | char | Check if firmware state A or B is bad. (local) |
 | `--set_app_state_bad` | char | Mark application state A or B as bad. (local) |
 | `--is_app_state_bad` | char | Check if application state A or B is bad. (local) |
-| `--automatic` | switch | Automatic update mode. Reads `UPDATE_STICK` and `UPDATE_FILE` env vars. (local) |
+| `--automatic` | switch | Automatic update mode. Reads `UPDATE_STICK`, `UPDATE_FILE` and, for a bare `fw` or `app` image, `UPDATE_TYPE` env vars. (local) |
 | `--debug` | switch | Enable debug-level logging. (local) |
 | `--version` | switch | Print CLI version. (local) |
 | `--is_update_available` | switch | Check if an update is available on the server. (Azure Cloud) |
