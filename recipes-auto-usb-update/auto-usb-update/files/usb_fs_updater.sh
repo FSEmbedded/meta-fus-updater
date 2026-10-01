@@ -173,7 +173,8 @@ else
     export UPDATE_FILE="$(basename "$CANDIDATE")"
 fi
 
-# Only "fw" and "app" need --update_type; omit for standard .fs updates.
+# Only "fw" and "app" select a bare image; fs-updater reads the type from the
+# environment. Anything else is dropped so a standard .fs update is installed.
 update_type='nok'
 if [ -n "${UPDATE_TYPE:-}" ]; then
     case "$UPDATE_TYPE" in
@@ -183,6 +184,12 @@ if [ -n "${UPDATE_TYPE:-}" ]; then
 fi
 
 log "Update type ${UPDATE_TYPE:-none} - $update_type"
+
+if [ "$update_type" = 'ok' ]; then
+    export UPDATE_TYPE
+else
+    unset UPDATE_TYPE
+fi
 
 # set to 0 to handle || operator correctly
 return_state=0

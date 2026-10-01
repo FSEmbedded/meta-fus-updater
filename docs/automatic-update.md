@@ -10,11 +10,13 @@ The file ***update_config*** must be available and supports the following variab
 
 ```shell
 UPDATE_FILE=<update image name>
-UPDATE_TYPE=<fw|app>         # optional; with SCAN_FOR_UPDATE, scan for *.fw/*.app instead of *.fs
+UPDATE_TYPE=<fw|app>         # optional; install a bare image of that type instead of a .fs update;
+                             # with SCAN_FOR_UPDATE, scan for *.fw/*.app instead of *.fs
 SCAN_FOR_UPDATE=yes          # optional; scan for an update file if UPDATE_FILE is not set or not found
 ```
 
 Possible images are *firmware_&lt;dev&gt;.fs*, *application.fs* or *update_&lt;dev&gt;.fs*, where &lt;dev&gt; is *emmc* or *nand*.
+With `UPDATE_TYPE=fw` the file is a bare RAUC bundle, with `UPDATE_TYPE=app` a signed application image.
 
 After a successful installation the script initiates a reboot by executing
 `fs-updater --apply_update`. After the reboot the update must be committed
@@ -34,7 +36,7 @@ update is pending.
 4. If sufficient RAM is available, the update file is copied to `/tmp` so the USB
    stick can be removed safely before the update completes.
 5. `fs-updater --automatic` is called with `UPDATE_STICK` and `UPDATE_FILE`
-   environment variables. On success, `fs-updater --apply_update` reboots into
+   environment variables, plus `UPDATE_TYPE` when it is `fw` or `app`. On success, `fs-updater --apply_update` reboots into
    the new slot.
 
 ### Log file
