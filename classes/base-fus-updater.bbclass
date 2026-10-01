@@ -220,7 +220,7 @@ do_create_squashfs_rootfs_images() {
             -o ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs ${MKUBIFS_ARGS}
 
         if [ ! -f "${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs" ]; then
-            bbfatal "Rootfs squashfs creation failed: ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs not found"
+            bbfatal "Data partition UBIFS creation failed: ${IMGDEPLOYDIR}/${IMAGE_NAME}.data-partition-nand.ubifs not found"
         fi
 
         cur_dir=$(pwd)
@@ -690,7 +690,7 @@ create_fsupdate () {
         fw)
             UPDATE_FILE_NAME="rauc_update_${4}.artifact"
             update_version=${FIRMWARE_VERSION}
-            update_handler="fus\/firwmware"
+            update_handler="fus\/firmware"
             remove_block=14,22d
             target_archiv_name="firmware_${4}"
             update_name="Firmware"
